@@ -1,0 +1,21 @@
+[package]
+name = "bevy_mod_billboard"
+version = "0.1.0"
+edition = "2021"
+description = "Billboard text and texture support for bevy"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/kulkalkul/bevy_mod_billboard.git"
+homepage = "https://github.com/kulkalkul/bevy_mod_billboard.git"
+documentation = "https://docs.rs/bevy_mod_billboard"
+readme = "README.md"
+keywords = [ "bevy", "gamedev", "graphics", "billboard", "3dtext" ]
+categories = [ "rendering", "game-development" ]
+authors = [ "Bora Ülker" ]
+exclude = [ "images" ]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+bevy = { version = "0.9.1", default-features = false, features = [
+    "bevy_core_pipeline", "bevy_render", "bevy_asset", "bevy_text", "bevy_sprite"
+] }
