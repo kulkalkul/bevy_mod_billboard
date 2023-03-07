@@ -11,11 +11,14 @@ readme = "README.md"
 keywords = [ "bevy", "gamedev", "graphics", "billboard", "3dtext" ]
 categories = [ "rendering", "game-development" ]
 authors = [ "Bora Ülker" ]
-exclude = [ "images" ]
+exclude = [ "images", "assets" ]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 bevy = { version = "0.9.1", default-features = false, features = [
-    "bevy_core_pipeline", "bevy_render", "bevy_asset", "bevy_text", "bevy_sprite"
+    "bevy_core_pipeline", "bevy_render", "bevy_asset", "bevy_text", "bevy_sprite", "bevy_winit"
 ] }
+
+[dev-dependencies]
+bevy = "0.9.1"
