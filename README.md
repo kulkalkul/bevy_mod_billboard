@@ -5,15 +5,27 @@ Billboard text and texture support for bevy
 
 ## Todo
 - Follow Rust API Guidelines: https://rust-lang.github.io/api-guidelines/about.html
-- Add example projects
+
+## Limitations
+
+- Uses texture_array for text, according to
+[this](https://github.com/gfx-rs/wgpu/issues/3197), it doesn't work on
+webgl2.
 
 ## Bevy Compatibility
 
 | Bevy Version | Crate Version |
 |--------------|---------------|
-| `0.9`        | `0.1`         |
+| `0.9`        | `0.1.1`       |
 
 ## Example
+
+Setup:
+```rs
+App::new()
+    .add_plugins(DefaultPlugins)
+    .add_plugin(BillboardPlugin);
+```
 
 Text:
 ```rs
@@ -48,7 +60,7 @@ fn spawn_billboard_texture(
     mut billboard_textures: ResMut<Assets<BillboardTexture>>,
     // rest
 ) {
-    .spawn(BillboardTextureBundle {
+    commands.spawn(BillboardTextureBundle {
         transform: Transform::from_translation(Vec3::new(0., 5., 0.)),
         texture: billboard_textures.add(BillboardTexture::Single(image_handle.clone()),
         mesh: meshes.add(Quad::new(Vec2::new(4.0, 4.0)).into()).into(),
@@ -56,6 +68,8 @@ fn spawn_billboard_texture(
     });
 }
 ```
+
+Full examples at [examples](examples).
 
 ## License
 
