@@ -185,11 +185,31 @@ impl ArrayImageCached {
     }
 }
 
-// This might be redundant
-#[derive(Clone, Hash, PartialEq, Eq)]
-pub enum BillboardPipelineKey {
-    Text,
-    Texture,
+// Reference:
+// https://github.com/bevyengine/bevy/blob/release-0.9.1/crates/bevy_sprite/src/mesh2d/mesh.rs#L282
+bitflags::bitflags! {
+    #[repr(transparent)]
+    // NOTE: Apparently quadro drivers support up to 64x MSAA.
+    // MSAA uses the highest 3 bits for the MSAA log2(sample count) to support up to 128x MSAA.
+    pub struct BillboardPipelineKey: u32 {
+        const TEXT               = 0;
+        const TEXTURE            = (1 << 0);
+        const MSAA_RESERVED_BITS = Self::MSAA_MASK_BITS << Self::MSAA_SHIFT_BITS;
+    }
+}
+
+impl BillboardPipelineKey {
+    const MSAA_MASK_BITS: u32 = 0b111;
+    const MSAA_SHIFT_BITS: u32 = 32 - Self::MSAA_MASK_BITS.count_ones();
+
+    pub fn from_msaa_samples(msaa_samples: u32) -> Self {
+        let msaa_bits =
+            (msaa_samples.trailing_zeros() & Self::MSAA_MASK_BITS) << Self::MSAA_SHIFT_BITS;
+        Self::from_bits(msaa_bits).unwrap()
+    }
+    pub fn msaa_samples(&self) -> u32 {
+        1 << ((self.bits >> Self::MSAA_SHIFT_BITS) & Self::MSAA_MASK_BITS)
+    }
 }
 
 #[derive(Resource, Clone)]
@@ -243,7 +263,7 @@ impl SpecializedMeshPipeline for BillboardPipeline {
 
     fn specialize(
         &self,
-        _key: Self::Key,
+        key: Self::Key,
         layout: &MeshVertexBufferLayout,
     ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
         const DEF_VERTEX_COLOR: &str = "VERTEX_COLOR";
@@ -316,7 +336,7 @@ impl SpecializedMeshPipeline for BillboardPipeline {
                 bias: default(),
             }),
             multisample: MultisampleState {
-                count: 4,
+                count: key.msaa_samples(),
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
@@ -540,6 +560,7 @@ pub fn queue_billboard_texture(
     transparent_draw_functions: Res<DrawFunctions<Transparent3d>>,
     billboard_text_pipeline: Res<BillboardTextPipeline>,
     billboard_texture_pipeline: Res<BillboardTexturePipeline>,
+    msaa: Res<Msaa>,
     render_images: Res<RenderAssets<Image>>,
     render_meshes: Res<RenderAssets<Mesh>>,
     billboard_textures: Res<RenderAssets<BillboardTexture>>,
@@ -572,6 +593,8 @@ pub fn queue_billboard_texture(
                 &render_images,
             ) else { continue; };
 
+            let key = BillboardPipelineKey::from_msaa_samples(msaa.samples);
+
             let (array_handle, array_image, pipeline_id, texture_layout) = match billboard_type {
                 BillboardTextureType::Single(array_handle, array_image) => (
                     array_handle,
@@ -579,7 +602,7 @@ pub fn queue_billboard_texture(
                     texture_pipelines.specialize(
                         &mut pipeline_cache,
                         &billboard_texture_pipeline,
-                        BillboardPipelineKey::Texture,
+                        key | BillboardPipelineKey::TEXTURE,
                         &mesh.layout,
                     ),
                     &billboard_texture_pipeline.texture_layout,
@@ -590,7 +613,7 @@ pub fn queue_billboard_texture(
                     text_pipelines.specialize(
                         &mut pipeline_cache,
                         &billboard_text_pipeline,
-                        BillboardPipelineKey::Text,
+                        key | BillboardPipelineKey::TEXT,
                         &mesh.layout,
                     ),
                     &billboard_text_pipeline.texture_layout,
