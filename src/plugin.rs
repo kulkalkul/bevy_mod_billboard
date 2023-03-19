@@ -5,8 +5,7 @@ use crate::pipeline::{
 };
 use crate::text::update_billboard_text;
 use crate::{
-    BillboardMeshHandle, BillboardTextBounds, BillboardTextSize, BillboardTexture,
-    BILLBOARD_SHADER_HANDLE,
+    BillboardMeshHandle, BillboardTextBounds, BillboardTexture, BILLBOARD_SHADER_HANDLE,
 };
 use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::prelude::*;
@@ -15,8 +14,7 @@ use bevy::render::extract_component::UniformComponentPlugin;
 use bevy::render::render_asset::RenderAssetPlugin;
 use bevy::render::render_phase::AddRenderCommand;
 use bevy::render::render_resource::SpecializedMeshPipelines;
-use bevy::render::{RenderApp, RenderStage};
-use bevy::window::ModifiesWindows;
+use bevy::render::{RenderApp, RenderSet};
 
 pub struct BillboardPlugin;
 
@@ -31,15 +29,11 @@ impl Plugin for BillboardPlugin {
         app.add_asset::<BillboardTexture>()
             .add_plugin(UniformComponentPlugin::<BillboardUniform>::default())
             .add_plugin(RenderAssetPlugin::<BillboardTexture>::default())
-            .register_type::<BillboardTextSize>()
             .register_type::<BillboardTextBounds>()
             .register_type::<BillboardMeshHandle>()
-            .add_system_to_stage(
-                CoreStage::PostUpdate,
+            .add_system(
                 update_billboard_text
-                    // Could remove modifies windows as billboard text doesn't depend on
-                    // window scale_factor
-                    .after(ModifiesWindows)
+                    .in_base_set(CoreSet::PostUpdate)
                     .ambiguous_with(CameraUpdateSystem),
             );
 
@@ -53,9 +47,9 @@ impl Plugin for BillboardPlugin {
             .init_resource::<SpecializedMeshPipelines<BillboardTexturePipeline>>()
             .init_resource::<ImageBindGroups>()
             .init_resource::<ArrayImageCached>()
-            .add_system_to_stage(RenderStage::Extract, extract_billboard)
-            .add_system_to_stage(RenderStage::Queue, queue_billboard_bind_group)
-            .add_system_to_stage(RenderStage::Queue, queue_billboard_view_bind_groups)
-            .add_system_to_stage(RenderStage::Queue, queue_billboard_texture);
+            .add_system(extract_billboard.in_schedule(ExtractSchedule))
+            .add_system(queue_billboard_bind_group.in_set(RenderSet::Queue))
+            .add_system(queue_billboard_view_bind_groups.in_set(RenderSet::Queue))
+            .add_system(queue_billboard_texture.in_set(RenderSet::Queue));
     }
 }

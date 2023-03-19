@@ -16,6 +16,7 @@ webgl2.
 
 | Bevy Version | Crate Version |
 |--------------|---------------|
+| `0.10`       | `0.2.0`       |
 | `0.9`        | `0.1.1`       |
 
 ## Example
@@ -70,6 +71,14 @@ fn spawn_billboard_texture(
 ```
 
 Full examples at [examples](examples).
+
+## Changelog
+
+### [0.2.0] - 2023-03-19
+- Upgrade to Bevy 0.10.0
+- Remove BillboardTextSize, it isn't needed for internal calculations anymore
+
+Full changelog at [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

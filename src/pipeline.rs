@@ -1,6 +1,8 @@
 use crate::{ATTRIBUTE_TEXTURE_ARRAY_INDEX, BILLBOARD_SHADER_HANDLE};
+
 use bevy::core_pipeline::core_3d::Transparent3d;
-use bevy::ecs::system::lifetimeless::{Read, SQuery, SRes};
+use bevy::ecs::query::ROQueryItem;
+use bevy::ecs::system::lifetimeless::{Read, SRes};
 use bevy::ecs::system::{SystemParamItem, SystemState};
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
@@ -8,7 +10,7 @@ use bevy::render::extract_component::{ComponentUniforms, DynamicUniformIndex};
 use bevy::render::mesh::{GpuBufferInfo, MeshVertexBufferLayout, PrimitiveTopology};
 use bevy::render::render_asset::{PrepareAssetError, RenderAssets};
 use bevy::render::render_phase::{
-    DrawFunctions, EntityRenderCommand, RenderCommandResult, RenderPhase, SetItemPipeline,
+    DrawFunctions, RenderCommand, RenderCommandResult, RenderPhase, SetItemPipeline,
     TrackedRenderPass,
 };
 use bevy::render::render_resource::{
@@ -276,11 +278,11 @@ impl SpecializedMeshPipeline for BillboardPipeline {
         attributes.push(Mesh::ATTRIBUTE_UV_0.at_shader_location(1));
 
         if layout.contains(Mesh::ATTRIBUTE_COLOR) {
-            shader_defs.push(DEF_VERTEX_COLOR.to_string());
+            shader_defs.push(DEF_VERTEX_COLOR.into());
             attributes.push(Mesh::ATTRIBUTE_COLOR.at_shader_location(2));
         }
         if layout.contains(ATTRIBUTE_TEXTURE_ARRAY_INDEX) {
-            shader_defs.push(DEF_VERTEX_TEXTURE_ARRAY.to_string());
+            shader_defs.push(DEF_VERTEX_TEXTURE_ARRAY.into());
             attributes.push(ATTRIBUTE_TEXTURE_ARRAY_INDEX.at_shader_location(3));
         }
 
@@ -288,10 +290,10 @@ impl SpecializedMeshPipeline for BillboardPipeline {
 
         Ok(RenderPipelineDescriptor {
             label: Some("billboard_pipeline".into()),
-            layout: Some(vec![
+            layout: vec![
                 self.view_layout.clone(),
                 self.billboard_layout.clone(),
-            ]),
+            ],
             vertex: VertexState {
                 shader: BILLBOARD_SHADER_HANDLE.typed::<Shader>(),
                 entry_point: "vertex".into(),
@@ -340,6 +342,7 @@ impl SpecializedMeshPipeline for BillboardPipeline {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
+            push_constant_ranges: vec![],
         })
     }
 }
@@ -406,8 +409,6 @@ impl SpecializedMeshPipeline for BillboardTextPipeline {
             .map(|mut descriptor| {
                 descriptor
                     .layout
-                    .as_mut()
-                    .unwrap()
                     .push(self.texture_layout.clone());
                 descriptor
             })
@@ -448,8 +449,6 @@ impl SpecializedMeshPipeline for BillboardTexturePipeline {
             .map(|mut descriptor| {
                 descriptor
                     .layout
-                    .as_mut()
-                    .unwrap()
                     .push(self.texture_layout.clone());
                 descriptor
             })
@@ -593,7 +592,7 @@ pub fn queue_billboard_texture(
                 &render_images,
             ) else { continue; };
 
-            let key = BillboardPipelineKey::from_msaa_samples(msaa.samples);
+            let key = BillboardPipelineKey::from_msaa_samples(msaa.samples());
 
             let (array_handle, array_image, pipeline_id, texture_layout) = match billboard_type {
                 BillboardTextureType::Single(array_handle, array_image) => (
@@ -661,40 +660,41 @@ pub fn queue_billboard_texture(
 }
 
 pub struct SetBillboardViewBindGroup<const I: usize>;
-impl<const I: usize> EntityRenderCommand for SetBillboardViewBindGroup<I> {
-    type Param = SQuery<(Read<ViewUniformOffset>, Read<BillboardViewBindGroup>)>;
+impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardViewBindGroup<I> {
+    type Param = ();
+    type ViewWorldQuery = (Read<ViewUniformOffset>, Read<BillboardViewBindGroup>);
+    type ItemWorldQuery = ();
 
-    #[inline]
     fn render<'w>(
-        view: Entity,
-        _item: Entity,
-        view_query: SystemParamItem<'w, '_, Self::Param>,
+        _item: &Transparent3d,
+        (view_uniform, billboard_mesh_bind_group): ROQueryItem<'w, Self::ViewWorldQuery>,
+        _item_query: ROQueryItem<'w, Self::ItemWorldQuery>,
+        _param: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        let (view_uniform, billboard_mesh_bind_group) = view_query.get_inner(view).unwrap();
-
-        pass.set_bind_group(I, &billboard_mesh_bind_group.value, &[view_uniform.offset]);
+        pass.set_bind_group(
+            I,
+            &billboard_mesh_bind_group.value,
+            &[view_uniform.offset],
+        );
 
         RenderCommandResult::Success
     }
 }
 
 pub struct SetBillboardBindGroup<const I: usize>;
-impl<const I: usize> EntityRenderCommand for SetBillboardBindGroup<I> {
-    type Param = (
-        SRes<BillboardBindGroup>,
-        SQuery<Read<DynamicUniformIndex<BillboardUniform>>>,
-    );
+impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardBindGroup<I> {
+    type Param = SRes<BillboardBindGroup>;
+    type ViewWorldQuery = ();
+    type ItemWorldQuery = Read<DynamicUniformIndex<BillboardUniform>>;
 
-    #[inline]
     fn render<'w>(
-        _view: Entity,
-        item: Entity,
-        (billboard_bind_group, billboard_query): SystemParamItem<'w, '_, Self::Param>,
+        _item: &Transparent3d,
+        _view: ROQueryItem<'w, Self::ViewWorldQuery>,
+        billboard_index: ROQueryItem<'w, Self::ItemWorldQuery>,
+        billboard_bind_group: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        let billboard_index = billboard_query.get(item).unwrap();
-
         pass.set_bind_group(
             I,
             &billboard_bind_group.into_inner().value,
@@ -706,20 +706,18 @@ impl<const I: usize> EntityRenderCommand for SetBillboardBindGroup<I> {
 }
 
 pub struct SetBillboardTextureBindGroup<const I: usize>;
-impl<const I: usize> EntityRenderCommand for SetBillboardTextureBindGroup<I> {
-    type Param = (
-        SRes<ImageBindGroups>,
-        SRes<RenderAssets<BillboardTexture>>,
-        SQuery<Read<Handle<BillboardTexture>>>,
-    );
+impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardTextureBindGroup<I> {
+    type Param = (SRes<ImageBindGroups>, SRes<RenderAssets<BillboardTexture>>);
+    type ViewWorldQuery = ();
+    type ItemWorldQuery = Read<Handle<BillboardTexture>>;
 
     fn render<'w>(
-        _view: Entity,
-        item: Entity,
-        (images, billboard_textures, query): SystemParamItem<'w, '_, Self::Param>,
+        _item: &Transparent3d,
+        _view: ROQueryItem<'w, Self::ViewWorldQuery>,
+        billboard_texture_handle: ROQueryItem<'w, Self::ItemWorldQuery>,
+        (images, billboard_textures): SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        let billboard_texture_handle = query.get(item).unwrap();
         let billboard_texture = billboard_textures.get(billboard_texture_handle).unwrap();
 
         match billboard_texture.handle() {
@@ -736,17 +734,18 @@ impl<const I: usize> EntityRenderCommand for SetBillboardTextureBindGroup<I> {
 }
 
 pub struct DrawBillboardMesh;
-impl EntityRenderCommand for DrawBillboardMesh {
-    type Param = (SRes<RenderAssets<Mesh>>, SQuery<Read<BillboardMeshHandle>>);
+impl RenderCommand<Transparent3d> for DrawBillboardMesh {
+    type Param = SRes<RenderAssets<Mesh>>;
+    type ViewWorldQuery = ();
+    type ItemWorldQuery = Read<BillboardMeshHandle>;
 
     fn render<'w>(
-        _view: Entity,
-        item: Entity,
-        (meshes, mesh_query): SystemParamItem<'w, '_, Self::Param>,
+        _item: &Transparent3d,
+        _view: ROQueryItem<'w, Self::ViewWorldQuery>,
+        billboard_mesh_handle: ROQueryItem<'w, Self::ItemWorldQuery>,
+        meshes: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        let billboard_mesh_handle = mesh_query.get(item).unwrap();
-
         if let Some(gpu_mesh) = meshes.into_inner().get(&billboard_mesh_handle.0) {
             pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
 
@@ -758,7 +757,7 @@ impl EntityRenderCommand for DrawBillboardMesh {
                 } => {
                     pass.set_index_buffer(buffer.slice(..), 0, *index_format);
                     pass.draw_indexed(0..*count, 0, 0..1);
-                }
+                },
                 GpuBufferInfo::NonIndexed { vertex_count } => {
                     pass.draw(0..*vertex_count, 0..1);
                 }
