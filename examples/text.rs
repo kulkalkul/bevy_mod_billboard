@@ -31,7 +31,7 @@ fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
                         color: Color::WHITE,
                     }
                 }
-            ]).with_alignment(TextAlignment::CENTER),
+            ]).with_alignment(TextAlignment::Center),
             ..default()
         });
 

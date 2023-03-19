@@ -5,6 +5,7 @@ use bevy::render::render_resource::{
     Extent3d, TextureDimension, TextureFormat, TextureUsages, TextureViewDescriptor,
     TextureViewDimension,
 };
+use bevy::sprite::Anchor;
 use bevy::text::{
     FontAtlasSet, FontAtlasWarning, PositionedGlyph, TextLayoutInfo, TextPipeline, TextSettings,
     YAxisOrientation,
@@ -15,11 +16,9 @@ use bevy::utils::{HashMap, HashSet};
 // https://github.com/bevyengine/bevy/blob/5718a7e74cc9b93d1d0bed9123548222123151b3/crates/bevy_text/src/text2d.rs
 // https://github.com/bevyengine/bevy/blob/f749e734e798733dcaa13f0ce403dc3e1c00943a/crates/bevy_text/src/text3d.rs
 
-#[derive(Component, Default, Copy, Clone, Debug, Reflect)]
-#[reflect(Component)]
-pub struct BillboardTextSize {
-    pub size: Vec2,
-}
+// This is duplicate of Tex2dBounds; not sure if I should simply use Text2dBounds. Though, in that
+// case, newtype over Text might be needed for proper querying, so default text renderer doesn't
+// clash with this one.
 
 #[derive(Component, Copy, Clone, Debug, Reflect)]
 #[reflect(Component)]
@@ -28,12 +27,18 @@ pub struct BillboardTextBounds {
 }
 
 impl Default for BillboardTextBounds {
+    #[inline]
     fn default() -> Self {
-        Self {
-            size: Vec2::new(f32::MAX, f32::MAX),
-        }
+        Self::UNBOUNDED
     }
 }
+
+impl BillboardTextBounds {
+    pub const UNBOUNDED: Self = Self {
+        size: Vec2::splat(f32::INFINITY),
+    };
+}
+
 
 pub fn update_billboard_text(
     mut commands: Commands,
@@ -49,28 +54,21 @@ pub fn update_billboard_text(
     mut text_pipeline: ResMut<TextPipeline>,
     mut text_query: Query<(
         Entity,
-        Changed<Text>,
-        &Text,
-        Option<&BillboardTextBounds>,
-        &mut BillboardTextSize,
+        Ref<Text>,
+        Ref<BillboardTextBounds>,
         Option<&mut TextLayoutInfo>,
+        &Anchor,
     )>,
 ) {
-    for (entity, text_changed, text, maybe_bounds, mut calculated_size, text_layout_info) in
-        &mut text_query
-    {
-        if text_changed || queue.remove(&entity) {
-            let text_bounds = match maybe_bounds {
-                Some(bounds) => bounds.size,
-                None => Vec2::new(f32::MAX, f32::MAX),
-            };
-
+    for (entity,text, bounds, text_layout_info, anchor) in &mut text_query {
+        if text.is_changed() || bounds.is_changed() || queue.remove(&entity) {
             let info = match text_pipeline.queue_text(
                 &fonts,
                 &text.sections,
                 1.0,
                 text.alignment,
-                text_bounds,
+                text.linebreak_behaviour,
+                bounds.size,
                 &mut font_atlas_set_storage,
                 &mut texture_atlases,
                 &mut images,
@@ -83,33 +81,21 @@ pub fn update_billboard_text(
                     queue.insert(entity);
                     continue;
                 }
-                Err(err @ TextError::FailedToAddGlyph(_))
-                | Err(err @ TextError::ExceedMaxTextAtlases(_)) => {
+                Err(err @ TextError::FailedToAddGlyph(_)) => {
                     panic!("Fatal error when processing text: {err}.");
                 }
                 Ok(info) => info,
             };
 
-            calculated_size.size = Vec2::new(info.size.x, info.size.y);
-
-            let (width, height) = (calculated_size.size.x, calculated_size.size.y);
-
-            let alignment_offset = match text.alignment.vertical {
-                VerticalAlign::Top => Vec2::new(0.0, -height),
-                VerticalAlign::Center => Vec2::new(0.0, -height * 0.5),
-                VerticalAlign::Bottom => Vec2::ZERO,
-            } + match text.alignment.horizontal {
-                HorizontalAlign::Left => Vec2::ZERO,
-                HorizontalAlign::Center => Vec2::new(-width * 0.5, 0.0),
-                HorizontalAlign::Right => Vec2::new(-width, 0.0),
-            };
+            let text_anchor = -(anchor.as_vec() + 0.5);
+            let alignment_translation = info.size * text_anchor;
 
             let text_mesh_and_texture = build_text_mesh_and_texture(
                 &text.sections,
                 &mut texture_atlases,
                 &mut images,
                 &info,
-                alignment_offset,
+                alignment_translation,
             );
 
             let (mesh, atlas_texture_handles, array_texture_handle) = match text_mesh_and_texture {
@@ -153,7 +139,7 @@ fn build_text_mesh_and_texture(
     texture_atlases: &mut Assets<TextureAtlas>,
     images: &mut Assets<Image>,
     info: &TextLayoutInfo,
-    alignment_offset: Vec2,
+    alignment_translation: Vec2,
 ) -> Option<(Mesh, Vec<Handle<Image>>, Handle<Image>)> {
     let length = info.glyphs.len();
     let mut atlases = HashMap::new();
@@ -189,11 +175,10 @@ fn build_text_mesh_and_texture(
             atlas_info,
             section_index,
             ..
-        } in glyphs
-        {
+        } in glyphs {
             let index = positions.len() as u32;
 
-            let position = *position + alignment_offset;
+            let position = *position + alignment_translation;
 
             let half_size = *size / 2.0;
             let top_left = position - half_size;
