@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ecs::entity::Entities, prelude::*};
 use bevy_mod_billboard::{BillboardPlugin, BillboardTextBundle};
 
 fn main() {
@@ -7,7 +7,7 @@ fn main() {
         .add_plugin(BillboardPlugin)
         .add_startup_system(spawn_camera)
         // By running the systems in this order we can actually see our billboard to verify that it's working
-        .add_systems((despawn_billboard, spawn_billboard).chain())
+        .add_systems((despawn_billboard, spawn_billboard, debug_memory_use).chain())
         .run();
 }
 
@@ -55,4 +55,8 @@ fn despawn_billboard(mut commands: Commands, query: Query<Entity, With<Text>>) {
     for entity in query.iter() {
         commands.entity(entity).despawn();
     }
+}
+
+fn debug_memory_use(entities: &Entities) {
+    info!("{} entities", entities.len());
 }
