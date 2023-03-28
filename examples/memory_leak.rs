@@ -1,14 +1,33 @@
-use bevy::{ecs::entity::Entities, prelude::*};
-use bevy_mod_billboard::{pipeline::BillboardBindGroup, BillboardPlugin, BillboardTextBundle};
+use std::mem::size_of_val;
+
+use bevy::{ecs::entity::Entities, prelude::*, render::RenderApp, sprite::ImageBindGroups};
+use bevy_mod_billboard::{
+    pipeline::{
+        ArrayImageCached, BillboardPipeline, BillboardTextPipeline, BillboardTexturePipeline,
+    },
+    BillboardPlugin, BillboardTextBundle,
+};
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
+    let mut app = App::new();
+
+    app.add_plugins(DefaultPlugins)
         .add_plugin(BillboardPlugin)
         .add_startup_system(spawn_camera)
         // By running the systems in this order we can actually see our billboard to verify that it's working
-        .add_systems((despawn_billboard, spawn_billboard, debug_memory_use).chain())
-        .run();
+        .add_systems(
+            (
+                despawn_billboard,
+                spawn_billboard,
+                debug_main_app_memory_use,
+            )
+                .chain(),
+        );
+
+    app.sub_app_mut(RenderApp)
+        .add_system(debug_render_app_memory_use);
+
+    app.run();
 }
 
 /// Avoid constantly reloading the font
@@ -57,6 +76,34 @@ fn despawn_billboard(mut commands: Commands, query: Query<Entity, With<Text>>) {
     }
 }
 
-fn debug_memory_use(entities: &Entities, billboard_bind_groups: Res<BillboardBindGroup>) {
-    info!("{} entities", entities.len());
+fn debug_main_app_memory_use(entities: &Entities) {
+    info!("{} main world entities", entities.len());
+}
+
+fn debug_render_app_memory_use(
+    entities: &Entities,
+    image_bind_groups: Res<ImageBindGroups>,
+    array_image_cached: Res<ArrayImageCached>,
+    billboard_pipeline: Res<BillboardPipeline>,
+    billboard_text_pipeline: Res<BillboardTextPipeline>,
+    billboard_texture_pipeline: Res<BillboardTexturePipeline>,
+) {
+    info!("{} render entities", entities.len());
+    info!("ImageBindGroups size: {}", size_of_val(&image_bind_groups));
+    info!(
+        "ArrayImageCached size: {}",
+        size_of_val(&array_image_cached)
+    );
+    info!(
+        "BillboardPipeline size: {}",
+        size_of_val(&billboard_pipeline)
+    );
+    info!(
+        "BillboardTextPipeline size: {}",
+        size_of_val(&billboard_text_pipeline)
+    );
+    info!(
+        "BillboardTexturePipeline size: {}",
+        size_of_val(&billboard_texture_pipeline)
+    );
 }
