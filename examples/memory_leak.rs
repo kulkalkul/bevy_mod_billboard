@@ -1,5 +1,5 @@
 use bevy::{ecs::entity::Entities, prelude::*};
-use bevy_mod_billboard::{BillboardPlugin, BillboardTextBundle};
+use bevy_mod_billboard::{pipeline::BillboardBindGroup, BillboardPlugin, BillboardTextBundle};
 
 fn main() {
     App::new()
@@ -57,6 +57,6 @@ fn despawn_billboard(mut commands: Commands, query: Query<Entity, With<Text>>) {
     }
 }
 
-fn debug_memory_use(entities: &Entities) {
+fn debug_memory_use(entities: &Entities, billboard_bind_groups: Res<BillboardBindGroup>) {
     info!("{} entities", entities.len());
 }
