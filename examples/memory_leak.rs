@@ -1,11 +1,14 @@
 use std::mem::size_of_val;
 
-use bevy::{ecs::entity::Entities, prelude::*, render::RenderApp, sprite::ImageBindGroups};
+use bevy::{
+    ecs::entity::Entities, prelude::*, render::RenderApp, sprite::ImageBindGroups,
+    text::FontAtlasSet,
+};
 use bevy_mod_billboard::{
     pipeline::{
         ArrayImageCached, BillboardPipeline, BillboardTextPipeline, BillboardTexturePipeline,
     },
-    BillboardPlugin, BillboardTextBundle,
+    BillboardPlugin, BillboardTextBundle, BillboardTexture,
 };
 
 fn main() {
@@ -76,8 +79,29 @@ fn despawn_billboard(mut commands: Commands, query: Query<Entity, With<Text>>) {
     }
 }
 
-fn debug_main_app_memory_use(entities: &Entities) {
+fn debug_main_app_memory_use(
+    entities: &Entities,
+    image_assets: Res<Assets<Image>>,
+    texture_atlas_asssets: Res<Assets<TextureAtlas>>,
+    billboard_texture_assets: Res<Assets<BillboardTexture>>,
+    font_atlas_set_assets: Res<Assets<FontAtlasSet>>,
+    asset_server: Res<AssetServer>,
+) {
     info!("{} main world entities", entities.len());
+    info!("Image assets size: {}", size_of_val(&image_assets));
+    info!(
+        "TextureAtlas assets size: {}",
+        size_of_val(&texture_atlas_asssets)
+    );
+    info!(
+        "BillboardTexture assets size: {}",
+        size_of_val(&billboard_texture_assets)
+    );
+    info!(
+        "FontAtlasSet assets size: {}",
+        size_of_val(&font_atlas_set_assets)
+    );
+    info!("AssetServer size: {}", size_of_val(&asset_server));
 }
 
 fn debug_render_app_memory_use(
