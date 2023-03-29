@@ -16,7 +16,7 @@ webgl2.
 
 | Bevy Version | Crate Version |
 |--------------|---------------|
-| `0.10`       | `0.2.0`       |
+| `0.10`       | `0.2.1`       |
 | `0.9`        | `0.1.1`       |
 
 ## Example
@@ -73,6 +73,9 @@ fn spawn_billboard_texture(
 Full examples at [examples](examples).
 
 ## Changelog
+
+## [0.2.1] - 2023-03-29
+- Fix memory leak caused by ImageBindGroup
 
 ### [0.2.0] - 2023-03-19
 - Upgrade to Bevy 0.10.0
