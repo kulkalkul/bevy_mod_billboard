@@ -74,7 +74,7 @@ Full examples at [examples](examples).
 
 ## Changelog
 
-## [0.2.1] - 2023-03-29
+### [0.2.1] - 2023-03-29
 - Fix memory leak caused by ImageBindGroup
 
 ### [0.2.0] - 2023-03-19
