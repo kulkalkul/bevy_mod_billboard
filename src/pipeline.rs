@@ -1,4 +1,4 @@
-use crate::{ATTRIBUTE_TEXTURE_ARRAY_INDEX, BILLBOARD_SHADER_HANDLE};
+use crate::{ATTRIBUTE_TEXTURE_ARRAY_INDEX, BILLBOARD_SHADER_HANDLE, BillboardDepth};
 
 use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::ecs::query::ROQueryItem;
@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy::render::extract_component::{ComponentUniforms, DynamicUniformIndex};
 use bevy::render::mesh::{GpuBufferInfo, MeshVertexBufferLayout, PrimitiveTopology};
-use bevy::render::render_asset::{PrepareAssetError, RenderAssets};
+use bevy::render::render_asset::{PrepareAssetError, RenderAsset, RenderAssets};
 use bevy::render::render_phase::{
     DrawFunctions, RenderCommand, RenderCommandResult, RenderPhase, SetItemPipeline,
     TrackedRenderPass,
@@ -59,7 +59,7 @@ impl Default for BillboardTexture {
     }
 }
 
-impl bevy::render::render_asset::RenderAsset for BillboardTexture {
+impl RenderAsset for BillboardTexture {
     type ExtractedAsset = BillboardTexture;
     type PreparedAsset = BillboardTexture;
     type Param = ();
@@ -197,6 +197,7 @@ bitflags::bitflags! {
     pub struct BillboardPipelineKey: u32 {
         const TEXT               = 0;
         const TEXTURE            = (1 << 0);
+        const DEPTH              = (2 << 0);
         const MSAA_RESERVED_BITS = Self::MSAA_MASK_BITS << Self::MSAA_SHIFT_BITS;
     }
 }
@@ -289,6 +290,12 @@ impl SpecializedMeshPipeline for BillboardPipeline {
 
         let vertex_buffer_layout = layout.get_layout(&attributes)?;
 
+        let depth_compare = if key.contains(BillboardPipelineKey::DEPTH) {
+            CompareFunction::Greater
+        } else {
+            CompareFunction::Always
+        };
+
         Ok(RenderPipelineDescriptor {
             label: Some("billboard_pipeline".into()),
             layout: vec![self.view_layout.clone(), self.billboard_layout.clone()],
@@ -331,7 +338,7 @@ impl SpecializedMeshPipeline for BillboardPipeline {
             depth_stencil: Some(DepthStencilState {
                 format: TextureFormat::Depth32Float,
                 depth_write_enabled: false,
-                depth_compare: CompareFunction::Greater,
+                depth_compare,
                 stencil: default(),
                 bias: default(),
             }),
@@ -459,12 +466,13 @@ pub fn extract_billboard(
             &GlobalTransform,
             &Handle<BillboardTexture>,
             &BillboardMeshHandle,
+            &BillboardDepth,
         )>,
     >,
 ) {
     let mut values = Vec::with_capacity(*previous_len);
 
-    for (entity, visibility, transform, billboard_texture_handle, billboard_mesh_handle) in
+    for (entity, visibility, transform, texture_handle, mesh_handle, depth) in
         query.iter()
     {
         if !visibility.is_visible() {
@@ -483,9 +491,10 @@ pub fn extract_billboard(
         values.push((
             entity,
             (
-                billboard_texture_handle.clone_weak(),
-                BillboardMeshHandle(billboard_mesh_handle.0.clone_weak()),
+                texture_handle.clone_weak(),
+                BillboardMeshHandle(mesh_handle.0.clone_weak()),
                 BillboardUniform { transform },
+                *depth,
             ),
         ));
     }
@@ -560,6 +569,7 @@ pub fn queue_billboard_texture(
         &Handle<BillboardTexture>,
         &BillboardUniform,
         &BillboardMeshHandle,
+        &BillboardDepth,
     )>,
     events: Res<SpriteAssetEvents>,
 ) {
@@ -586,6 +596,7 @@ pub fn queue_billboard_texture(
                        billboard_texture_handle,
                        billboard_uniform,
                        billboard_mesh_handle,
+                       depth,
                    )) = billboards.get(*visible_entity) else { continue; };
             let Some(mesh) = render_meshes.get(&billboard_mesh_handle.0) else { continue; };
             let Some(billboard_texture) = billboard_textures.get(billboard_texture_handle) else { continue; };
@@ -596,7 +607,11 @@ pub fn queue_billboard_texture(
                 &render_images,
             ) else { continue; };
 
-            let key = BillboardPipelineKey::from_msaa_samples(msaa.samples());
+            let mut key = BillboardPipelineKey::from_msaa_samples(msaa.samples());
+
+            if depth.0 {
+                key |= BillboardPipelineKey::DEPTH;
+            }
 
             let (array_handle, array_image, pipeline_id, texture_layout) = match billboard_type {
                 BillboardTextureType::Single(array_handle, array_image) => (

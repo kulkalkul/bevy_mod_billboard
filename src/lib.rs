@@ -18,6 +18,15 @@ pub(self) const BILLBOARD_SHADER_HANDLE: HandleUntyped =
 pub(self) const ATTRIBUTE_TEXTURE_ARRAY_INDEX: MeshVertexAttribute =
     MeshVertexAttribute::new("TextureArrayIndex", 584807746, VertexFormat::Sint32);
 
+#[derive(Clone, Copy, Component, Debug, Reflect)]
+pub struct BillboardDepth(pub bool);
+
+impl Default for BillboardDepth {
+    fn default() -> Self {
+        Self(true)
+    }
+}
+
 #[derive(Bundle, Default)]
 pub struct BillboardTextureBundle {
     pub texture: Handle<BillboardTexture>,
@@ -26,6 +35,7 @@ pub struct BillboardTextureBundle {
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
+    pub billboard_depth: BillboardDepth,
 }
 
 #[derive(Bundle, Default)]
@@ -37,4 +47,5 @@ pub struct BillboardTextBundle {
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
+    pub billboard_depth: BillboardDepth,
 }
