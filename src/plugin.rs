@@ -1,7 +1,7 @@
 use crate::pipeline::{
     extract_billboard, queue_billboard_bind_group, queue_billboard_texture,
     queue_billboard_view_bind_groups, ArrayImageCached, BillboardPipeline, BillboardTextPipeline,
-    BillboardTexturePipeline, BillboardUniform, DrawBillboard, ImageBindGroups,
+    BillboardTexturePipeline, BillboardUniform, DrawBillboard, BillboardImageBindGroups,
 };
 use crate::text::update_billboard_text;
 use crate::{
@@ -45,7 +45,7 @@ impl Plugin for BillboardPlugin {
             .init_resource::<SpecializedMeshPipelines<BillboardPipeline>>()
             .init_resource::<SpecializedMeshPipelines<BillboardTextPipeline>>()
             .init_resource::<SpecializedMeshPipelines<BillboardTexturePipeline>>()
-            .init_resource::<ImageBindGroups>()
+            .init_resource::<BillboardImageBindGroups>()
             .init_resource::<ArrayImageCached>()
             .add_system(extract_billboard.in_schedule(ExtractSchedule))
             .add_system(queue_billboard_bind_group.in_set(RenderSet::Queue))

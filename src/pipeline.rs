@@ -107,7 +107,7 @@ pub struct BillboardViewBindGroup {
 }
 
 #[derive(Resource, Default)]
-pub struct ImageBindGroups {
+pub struct BillboardImageBindGroups {
     values: HashMap<Handle<Image>, BindGroup>,
 }
 
@@ -546,7 +546,7 @@ pub fn queue_billboard_texture(
     mut text_pipelines: ResMut<SpecializedMeshPipelines<BillboardTextPipeline>>,
     mut texture_pipelines: ResMut<SpecializedMeshPipelines<BillboardTexturePipeline>>,
     mut pipeline_cache: ResMut<PipelineCache>,
-    mut image_bind_groups: ResMut<ImageBindGroups>,
+    mut image_bind_groups: ResMut<BillboardImageBindGroups>,
     mut array_image_cached: ResMut<ArrayImageCached>,
     render_device: Res<RenderDevice>,
     render_queue: Res<RenderQueue>,
@@ -707,7 +707,7 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardBindGroup<I> {
 
 pub struct SetBillboardTextureBindGroup<const I: usize>;
 impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardTextureBindGroup<I> {
-    type Param = (SRes<ImageBindGroups>, SRes<RenderAssets<BillboardTexture>>);
+    type Param = (SRes<BillboardImageBindGroups>, SRes<RenderAssets<BillboardTexture>>);
     type ViewWorldQuery = ();
     type ItemWorldQuery = Read<Handle<BillboardTexture>>;
 
