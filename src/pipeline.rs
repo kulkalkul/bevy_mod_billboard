@@ -29,6 +29,7 @@ use bevy::render::view::{
     ExtractedView, ViewUniform, ViewUniformOffset, ViewUniforms, VisibleEntities,
 };
 use bevy::render::Extract;
+use bevy::sprite::SpriteAssetEvents;
 use bevy::utils::{HashMap, HashSet};
 
 #[derive(Clone, Debug, TypeUuid)]
@@ -561,15 +562,24 @@ pub fn queue_billboard_texture(
     billboard_text_pipeline: Res<BillboardTextPipeline>,
     billboard_texture_pipeline: Res<BillboardTexturePipeline>,
     msaa: Res<Msaa>,
-    render_images: Res<RenderAssets<Image>>,
-    render_meshes: Res<RenderAssets<Mesh>>,
+    (render_images, render_meshes): (Res<RenderAssets<Image>>, Res<RenderAssets<Mesh>>),
     billboard_textures: Res<RenderAssets<BillboardTexture>>,
     billboards: Query<(
         &Handle<BillboardTexture>,
         &BillboardUniform,
         &BillboardMeshHandle,
     )>,
+    events: Res<SpriteAssetEvents>,
 ) {
+    for event in &events.images {
+        match event {
+            AssetEvent::Created { .. } => None,
+            AssetEvent::Modified { handle } | AssetEvent::Removed { handle } => {
+                image_bind_groups.values.remove(handle)
+            }
+        };
+    }
+
     for (view, visible_entities, mut transparent_phase) in &mut views {
         let draw_transparent_billboard = transparent_draw_functions
             .read()
