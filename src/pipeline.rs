@@ -571,6 +571,7 @@ pub fn queue_billboard_texture(
     )>,
     events: Res<SpriteAssetEvents>,
 ) {
+    // If an image has changed, the GpuImage has (probably) changed
     for event in &events.images {
         match event {
             AssetEvent::Created { .. } => None,
