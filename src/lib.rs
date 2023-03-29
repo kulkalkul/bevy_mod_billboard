@@ -1,6 +1,6 @@
-mod pipeline;
-mod plugin;
-mod text;
+pub mod pipeline;
+pub mod plugin;
+pub mod text;
 
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
@@ -10,7 +10,7 @@ use bevy::sprite::Anchor;
 
 pub use crate::pipeline::{BillboardMeshHandle, BillboardTexture};
 pub use crate::plugin::BillboardPlugin;
-pub use crate::text::{BillboardTextBounds};
+pub use crate::text::BillboardTextBounds;
 
 pub(self) const BILLBOARD_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 12823766040132746076);

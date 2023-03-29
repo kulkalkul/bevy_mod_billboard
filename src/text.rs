@@ -215,7 +215,7 @@ fn build_text_mesh_and_texture(
             indices.extend([index, index + 2, index + 1, index, index + 3, index + 2]);
         }
 
-        texture_atlas_handles.push(atlas.texture.clone());
+        texture_atlas_handles.push(atlas.texture.clone_weak());
 
         let mut image = images.get_mut(&atlas.texture).unwrap();
 
