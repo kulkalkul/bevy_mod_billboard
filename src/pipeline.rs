@@ -108,8 +108,7 @@ pub struct BillboardViewBindGroup {
 
 #[derive(Resource, Default)]
 pub struct ImageBindGroups {
-    // TODO: remove pub
-    pub values: HashMap<Handle<Image>, BindGroup>,
+    values: HashMap<Handle<Image>, BindGroup>,
 }
 
 #[derive(Resource, Default)]
@@ -292,10 +291,7 @@ impl SpecializedMeshPipeline for BillboardPipeline {
 
         Ok(RenderPipelineDescriptor {
             label: Some("billboard_pipeline".into()),
-            layout: vec![
-                self.view_layout.clone(),
-                self.billboard_layout.clone(),
-            ],
+            layout: vec![self.view_layout.clone(), self.billboard_layout.clone()],
             vertex: VertexState {
                 shader: BILLBOARD_SHADER_HANDLE.typed::<Shader>(),
                 entry_point: "vertex".into(),
@@ -409,9 +405,7 @@ impl SpecializedMeshPipeline for BillboardTextPipeline {
         self.billboard_pipeline
             .specialize(key, layout)
             .map(|mut descriptor| {
-                descriptor
-                    .layout
-                    .push(self.texture_layout.clone());
+                descriptor.layout.push(self.texture_layout.clone());
                 descriptor
             })
     }
@@ -449,9 +443,7 @@ impl SpecializedMeshPipeline for BillboardTexturePipeline {
         self.billboard_pipeline
             .specialize(key, layout)
             .map(|mut descriptor| {
-                descriptor
-                    .layout
-                    .push(self.texture_layout.clone());
+                descriptor.layout.push(self.texture_layout.clone());
                 descriptor
             })
     }
@@ -684,11 +676,7 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardViewBindGroup<
         _param: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        pass.set_bind_group(
-            I,
-            &billboard_mesh_bind_group.value,
-            &[view_uniform.offset],
-        );
+        pass.set_bind_group(I, &billboard_mesh_bind_group.value, &[view_uniform.offset]);
 
         RenderCommandResult::Success
     }
@@ -769,7 +757,7 @@ impl RenderCommand<Transparent3d> for DrawBillboardMesh {
                 } => {
                     pass.set_index_buffer(buffer.slice(..), 0, *index_format);
                     pass.draw_indexed(0..*count, 0, 0..1);
-                },
+                }
                 GpuBufferInfo::NonIndexed { vertex_count } => {
                     pass.draw(0..*vertex_count, 0..1);
                 }
