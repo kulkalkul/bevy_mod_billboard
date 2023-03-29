@@ -107,7 +107,8 @@ pub struct BillboardViewBindGroup {
 
 #[derive(Resource, Default)]
 pub struct ImageBindGroups {
-    values: HashMap<Handle<Image>, BindGroup>,
+    // TODO: remove pub
+    pub values: HashMap<Handle<Image>, BindGroup>,
 }
 
 #[derive(Resource, Default)]

@@ -1,7 +1,7 @@
 use std::mem::size_of_val;
 
 use bevy::{
-    ecs::entity::Entities, prelude::*, render::RenderApp, sprite::ImageBindGroups,
+    ecs::entity::Entities, prelude::*, render::RenderApp,
     text::FontAtlasSet,
 };
 use bevy_mod_billboard::{
@@ -10,6 +10,7 @@ use bevy_mod_billboard::{
     },
     BillboardPlugin, BillboardTextBundle, BillboardTexture,
 };
+use bevy_mod_billboard::pipeline::ImageBindGroups;
 
 fn main() {
     let mut app = App::new();
@@ -113,7 +114,7 @@ fn debug_render_app_memory_use(
     billboard_texture_pipeline: Res<BillboardTexturePipeline>,
 ) {
     info!("{} render entities", entities.len());
-    info!("ImageBindGroups size: {}", size_of_val(&image_bind_groups));
+    info!("ImageBindGroups size: {}", image_bind_groups.values.len());
     info!(
         "ArrayImageCached size: {}",
         size_of_val(&array_image_cached)
