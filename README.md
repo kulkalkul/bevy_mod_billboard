@@ -6,6 +6,12 @@ Billboard text and texture support for bevy
 ## Todo
 - Follow Rust API Guidelines: https://rust-lang.github.io/api-guidelines/about.html
 
+## Features
+- Styled text with multiple fonts.
+- Textures.
+- Depth culling enabling/disabling (enabled by default).
+- Y-axis locking (disabled by default).
+
 ## Limitations
 
 - Uses texture_array for text, according to
@@ -16,6 +22,7 @@ webgl2.
 
 | Bevy Version | Crate Version |
 |--------------|---------------|
+| `0.10`       | `0.3.0`       |
 | `0.10`       | `0.2.1`       |
 | `0.9`        | `0.1.1`       |
 
@@ -23,6 +30,8 @@ webgl2.
 
 Setup:
 ```rs
+use bevy_mod_billboard::prelude::*;
+
 App::new()
     .add_plugins(DefaultPlugins)
     .add_plugin(BillboardPlugin);
@@ -74,12 +83,13 @@ Full examples at [examples](examples).
 
 ## Changelog
 
+### [0.3.0] - 2023-03-30
+- Add prelude module and replace re-exports with prelude.
+- Add support for disabling depth.
+- Add support for locking Y axis.
+
 ### [0.2.1] - 2023-03-29
 - Fix memory leak caused by ImageBindGroup
-
-### [0.2.0] - 2023-03-19
-- Upgrade to Bevy 0.10.0
-- Remove BillboardTextSize, it isn't needed for internal calculations anymore
 
 Full changelog at [CHANGELOG.md](CHANGELOG.md).
 

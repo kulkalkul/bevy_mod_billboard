@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.0] - 2023-03-30
+- Add prelude module and replace re-exports with prelude.
+- Add support for disabling depth.
+- Add support for locking Y axis.
+
 ## [0.2.1] - 2023-03-29
 - Fix memory leak caused by ImageBindGroup
 
