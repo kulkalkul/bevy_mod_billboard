@@ -197,7 +197,7 @@ bitflags::bitflags! {
     pub struct BillboardPipelineKey: u32 {
         const TEXT               = 0;
         const TEXTURE            = (1 << 0);
-        const DEPTH              = (2 << 0);
+        const DEPTH              = (1 << 1);
         const MSAA_RESERVED_BITS = Self::MSAA_MASK_BITS << Self::MSAA_SHIFT_BITS;
     }
 }
