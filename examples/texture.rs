@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::prelude::shape::Quad;
-use bevy_mod_billboard::{BillboardMeshHandle, BillboardPlugin, BillboardTexture, BillboardTextureBundle};
+use bevy_mod_billboard::prelude::*;
 
 fn main() {
     App::new()

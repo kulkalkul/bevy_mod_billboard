@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy::prelude::shape::Cube;
-use bevy_mod_billboard::{BillboardDepth, BillboardPlugin, BillboardTextBundle};
+use bevy_mod_billboard::BillboardDepth;
+use bevy_mod_billboard::prelude::*;
 
 fn main() {
     App::new()
