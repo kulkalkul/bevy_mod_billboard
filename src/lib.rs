@@ -27,6 +27,16 @@ impl Default for BillboardDepth {
     }
 }
 
+#[derive(Default, Clone, Copy, Component, Debug, Reflect)]
+pub struct BillboardLockAxisY;
+
+#[derive(Bundle, Default)]
+pub struct BillboardLockAxisBundle<T: Bundle> {
+    #[bundle]
+    pub billboard_bundle: T,
+    pub lock_axis_y: BillboardLockAxisY,
+}
+
 #[derive(Bundle, Default)]
 pub struct BillboardTextureBundle {
     pub texture: Handle<BillboardTexture>,

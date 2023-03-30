@@ -52,7 +52,11 @@ struct VertexOutput {
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
     let camera_right = normalize(vec3<f32>(view.view_proj.x.x, view.view_proj.y.x, view.view_proj.z.x));
+#ifdef LOCK_Y
+    let camera_up = vec3<f32>(0.0, 1.0, 0.0);
+#else
     let camera_up = normalize(vec3<f32>(view.view_proj.x.y, view.view_proj.y.y, view.view_proj.z.y));
+#endif
 
     let world_space = camera_right * vertex.position.x + camera_up * vertex.position.y;
     let position = view.view_proj * billboard.model * vec4<f32>(world_space, 1.0);

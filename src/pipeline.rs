@@ -1,4 +1,4 @@
-use crate::{ATTRIBUTE_TEXTURE_ARRAY_INDEX, BILLBOARD_SHADER_HANDLE, BillboardDepth};
+use crate::{ATTRIBUTE_TEXTURE_ARRAY_INDEX, BILLBOARD_SHADER_HANDLE, BillboardDepth, BillboardLockAxisY};
 
 use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::ecs::query::ROQueryItem;
@@ -198,6 +198,7 @@ bitflags::bitflags! {
         const TEXT               = 0;
         const TEXTURE            = (1 << 0);
         const DEPTH              = (1 << 1);
+        const LOCK_Y             = (1 << 2);
         const MSAA_RESERVED_BITS = Self::MSAA_MASK_BITS << Self::MSAA_SHIFT_BITS;
     }
 }
@@ -272,6 +273,7 @@ impl SpecializedMeshPipeline for BillboardPipeline {
     ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
         const DEF_VERTEX_COLOR: &str = "VERTEX_COLOR";
         const DEF_VERTEX_TEXTURE_ARRAY: &str = "VERTEX_TEXTURE_ARRAY";
+        const DEF_LOCK_Y: &str = "LOCK_Y";
 
         let mut shader_defs = Vec::with_capacity(4);
         let mut attributes = Vec::with_capacity(4);
@@ -295,6 +297,10 @@ impl SpecializedMeshPipeline for BillboardPipeline {
         } else {
             CompareFunction::Always
         };
+
+        if key.contains(BillboardPipelineKey::LOCK_Y) {
+            shader_defs.push(DEF_LOCK_Y.into());
+        }
 
         Ok(RenderPipelineDescriptor {
             label: Some("billboard_pipeline".into()),
@@ -458,8 +464,9 @@ impl SpecializedMeshPipeline for BillboardTexturePipeline {
 
 pub fn extract_billboard(
     mut commands: Commands,
-    mut previous_len: Local<usize>,
-    query: Extract<
+    mut previous_len_lock: Local<usize>,
+    mut previous_len_lockless: Local<usize>,
+    query_lockless: Extract<
         Query<(
             Entity,
             &ComputedVisibility,
@@ -467,13 +474,51 @@ pub fn extract_billboard(
             &Handle<BillboardTexture>,
             &BillboardMeshHandle,
             &BillboardDepth,
-        )>,
+        ), Without<BillboardLockAxisY>>,
+    >,
+    query_lock: Extract<
+        Query<(
+            Entity,
+            &ComputedVisibility,
+            &GlobalTransform,
+            &Handle<BillboardTexture>,
+            &BillboardMeshHandle,
+            &BillboardDepth,
+            &BillboardLockAxisY,
+        ), With<BillboardLockAxisY>>,
     >,
 ) {
-    let mut values = Vec::with_capacity(*previous_len);
+    let mut values_lockless = Vec::with_capacity(*previous_len_lockless);
 
-    for (entity, visibility, transform, texture_handle, mesh_handle, depth) in
-        query.iter()
+    for (entity, visibility, transform, texture_handle, mesh_handle, depth) in query_lockless.iter() {
+        if !visibility.is_visible() {
+            continue;
+        }
+
+        // TODO: Maybe reset rotation elsewhere
+        let (scale, _, translation) = transform.to_scale_rotation_translation();
+        let transform = Transform {
+            translation,
+            scale,
+            ..default()
+        }
+        .compute_matrix();
+
+        values_lockless.push((
+            entity,
+            (
+                texture_handle.clone_weak(),
+                BillboardMeshHandle(mesh_handle.0.clone_weak()),
+                BillboardUniform { transform },
+                *depth,
+            )
+        ));
+    }
+
+    let mut values_lock = Vec::with_capacity(*previous_len_lock);
+
+    for (entity, visibility, transform, texture_handle, mesh_handle, depth, lock_axis_y) in
+        query_lock.iter()
     {
         if !visibility.is_visible() {
             continue;
@@ -488,19 +533,22 @@ pub fn extract_billboard(
         }
         .compute_matrix();
 
-        values.push((
+        values_lock.push((
             entity,
             (
                 texture_handle.clone_weak(),
                 BillboardMeshHandle(mesh_handle.0.clone_weak()),
                 BillboardUniform { transform },
                 *depth,
+                *lock_axis_y,
             ),
         ));
     }
 
-    *previous_len = values.len();
-    commands.insert_or_spawn_batch(values);
+    *previous_len_lockless = values_lockless.len();
+    *previous_len_lock = values_lock.len();
+    commands.insert_or_spawn_batch(values_lockless);
+    commands.insert_or_spawn_batch(values_lock);
 }
 
 pub fn queue_billboard_view_bind_groups(
@@ -570,6 +618,7 @@ pub fn queue_billboard_texture(
         &BillboardUniform,
         &BillboardMeshHandle,
         &BillboardDepth,
+        Option<&BillboardLockAxisY>,
     )>,
     events: Res<SpriteAssetEvents>,
 ) {
@@ -597,6 +646,7 @@ pub fn queue_billboard_texture(
                        billboard_uniform,
                        billboard_mesh_handle,
                        depth,
+                       lock_axis_y,
                    )) = billboards.get(*visible_entity) else { continue; };
             let Some(mesh) = render_meshes.get(&billboard_mesh_handle.0) else { continue; };
             let Some(billboard_texture) = billboard_textures.get(billboard_texture_handle) else { continue; };
@@ -611,6 +661,10 @@ pub fn queue_billboard_texture(
 
             if depth.0 {
                 key |= BillboardPipelineKey::DEPTH;
+            }
+
+            if lock_axis_y.is_some() {
+                key |= BillboardPipelineKey::LOCK_Y;
             }
 
             let (array_handle, array_image, pipeline_id, texture_layout) = match billboard_type {
