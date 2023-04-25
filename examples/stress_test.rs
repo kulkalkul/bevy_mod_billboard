@@ -4,6 +4,11 @@
 //! This example uses command line flags to determine which type of billboards to render.
 //! Run this example as `cargo run --example stress_test text` to render text billboards,
 //! or `cargo run --example stress_test texture` to render image-based billboards.
+//!
+//! To test the performance of constantly recomputing billboards,
+//! add the `recompute` argument to your invocation above.
+//! For example `cargo run --example stress_test text recompute` will render text billboards
+//! and recompute them every frame.
 
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
@@ -18,6 +23,7 @@ fn main() {
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_startup_system(setup)
+        .add_system(recompute_billboards)
         .run();
 }
 
@@ -73,5 +79,25 @@ fn setup(
                 }
             }
         }
+    }
+}
+
+fn recompute_billboards(
+    mut text_query: Query<&mut Text>,
+    mut billboard_query: Query<&mut Handle<BillboardTexture>>,
+) {
+    // Only do this work if we're testing performance of recomputing billboards
+    if !std::env::args().any(|arg| arg == "recompute") {
+        return;
+    };
+
+    for mut text in text_query.iter_mut() {
+        // Simply setting changed on the text component will cause the billboard to be recomputed
+        text.set_changed();
+    }
+
+    for mut billboard_texture_handle in billboard_query.iter_mut() {
+        // Simply setting changed on the mesh component will cause the billboard to be recomputed
+        billboard_texture_handle.set_changed();
     }
 }
