@@ -97,7 +97,7 @@ fn recompute_billboards(
     }
 
     for mut billboard_texture_handle in billboard_query.iter_mut() {
-        // Simply setting changed on the mesh component will cause the billboard to be recomputed
+        // Simply setting changed on the texture component will cause the billboard to be recomputed
         billboard_texture_handle.set_changed();
     }
 }
