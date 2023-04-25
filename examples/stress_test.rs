@@ -29,7 +29,7 @@ fn setup(
     let billboard_mesh_handle = BillboardMeshHandle(mesh_handle);
 
     commands.spawn(Camera3dBundle {
-        transform: Transform::from_translation(Vec3::new(0., 0., 100.))
+        transform: Transform::from_translation(Vec3::new(0., 0., 50.))
             .looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
     });
