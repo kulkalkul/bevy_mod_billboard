@@ -1,5 +1,9 @@
 //! Tests the performance of the library
 //! by rendering a large number of billboarded objects at once.
+//!
+//! This example uses command line flags to determine which type of billboards to render.
+//! Run this example as `cargo run --example stress_test text` to render text billboards,
+//! or `cargo run --example stress_test texture` to render image-based billboards.
 
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
@@ -27,6 +31,7 @@ fn setup(
     let billboard_texture_handle = billboard_textures.add(BillboardTexture::Single(image_handle));
     let mesh_handle = meshes.add(Quad::new(Vec2::new(1., 1.)).into());
     let billboard_mesh_handle = BillboardMeshHandle(mesh_handle);
+    let fira_sans_regular_handle = asset_server.load("FiraSans-Regular.ttf");
 
     commands.spawn(Camera3dBundle {
         transform: Transform::from_translation(Vec3::new(0., 0., 50.))
@@ -37,12 +42,35 @@ fn setup(
     for x in -10..=10 {
         for y in -10..=10 {
             for z in -10..=10 {
-                commands.spawn(BillboardTextureBundle {
-                    texture: billboard_texture_handle.clone(),
-                    mesh: billboard_mesh_handle.clone(),
-                    transform: Transform::from_translation(Vec3::new(x as f32, y as f32, z as f32)),
-                    ..Default::default()
-                });
+                let translation = Vec3::new(x as f32, y as f32, z as f32);
+
+                if std::env::args().any(|arg| arg == "text") {
+                    commands.spawn(BillboardTextBundle {
+                        transform: Transform {
+                            translation,
+                            rotation: Quat::IDENTITY,
+                            scale: Vec3::splat(0.0085),
+                        },
+                        text: Text::from_section(
+                            "STRESS",
+                            TextStyle {
+                                font_size: 60.0,
+                                font: fira_sans_regular_handle.clone(),
+                                color: Color::ORANGE,
+                            },
+                        ),
+                        ..default()
+                    });
+                }
+
+                if std::env::args().any(|arg| arg == "texture") {
+                    commands.spawn(BillboardTextureBundle {
+                        texture: billboard_texture_handle.clone(),
+                        mesh: billboard_mesh_handle.clone(),
+                        transform: Transform::from_translation(translation),
+                        ..Default::default()
+                    });
+                }
             }
         }
     }
