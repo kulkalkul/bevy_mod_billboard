@@ -45,9 +45,9 @@ fn setup(
         ..Default::default()
     });
 
-    for x in -10..=10 {
-        for y in -10..=10 {
-            for z in -10..=10 {
+    for x in -5..=5 {
+        for y in -5..=5 {
+            for z in -5..=5 {
                 let translation = Vec3::new(x as f32, y as f32, z as f32);
 
                 if std::env::args().any(|arg| arg == "text") {
