@@ -26,13 +26,16 @@ impl Default for BillboardDepth {
 }
 
 #[derive(Default, Clone, Copy, Component, Debug, Reflect)]
-pub struct BillboardLockAxisY;
+pub struct BillboardLockAxis {
+    pub y_axis: bool,
+    pub rotation: bool,
+}
 
 #[derive(Bundle, Default)]
 pub struct BillboardLockAxisBundle<T: Bundle> {
     #[bundle]
     pub billboard_bundle: T,
-    pub lock_axis_y: BillboardLockAxisY,
+    pub lock_axis: BillboardLockAxis,
 }
 
 #[derive(Bundle, Default)]

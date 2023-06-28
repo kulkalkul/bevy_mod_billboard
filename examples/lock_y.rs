@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy::prelude::shape::{Plane, Quad};
-use bevy_mod_billboard::BillboardLockAxisBundle;
+use bevy_mod_billboard::{BillboardLockAxisBundle, BillboardLockAxis};
 use bevy_mod_billboard::prelude::*;
 
 fn main() {
@@ -26,7 +26,10 @@ fn setup_scene(
                 mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(2., 4.)).into())),
                 ..default()
             },
-            ..default()
+            lock_axis: BillboardLockAxis {
+                y_axis: true,
+                ..Default::default()
+            },
         });
     commands
         .spawn(BillboardTextureBundle {
