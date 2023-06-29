@@ -474,31 +474,25 @@ pub fn extract_billboard(
     mut previous_len_lock: Local<usize>,
     mut previous_len_lockless: Local<usize>,
     query_lockless: Extract<
-        Query<
-            (
-                Entity,
-                &ComputedVisibility,
-                &GlobalTransform,
-                &Handle<BillboardTexture>,
-                &BillboardMeshHandle,
-                &BillboardDepth,
-            ),
-            Without<BillboardLockAxis>,
-        >,
+        Query<(
+            Entity,
+            &ComputedVisibility,
+            &GlobalTransform,
+            &Handle<BillboardTexture>,
+            &BillboardMeshHandle,
+            &BillboardDepth,
+        ), Without<BillboardLockAxis>>,
     >,
     query_lock: Extract<
-        Query<
-            (
-                Entity,
-                &ComputedVisibility,
-                &GlobalTransform,
-                &Handle<BillboardTexture>,
-                &BillboardMeshHandle,
-                &BillboardDepth,
-                &BillboardLockAxis,
-            ),
-            With<BillboardLockAxis>,
-        >,
+        Query<(
+            Entity,
+            &ComputedVisibility,
+            &GlobalTransform,
+            &Handle<BillboardTexture>,
+            &BillboardMeshHandle,
+            &BillboardDepth,
+            &BillboardLockAxis,
+        ), With<BillboardLockAxis>>,
     >,
 ) {
     let mut values_lockless = Vec::with_capacity(*previous_len_lockless);
