@@ -1,4 +1,6 @@
-use crate::{ATTRIBUTE_TEXTURE_ARRAY_INDEX, BILLBOARD_SHADER_HANDLE, BillboardDepth, BillboardLockAxisY};
+use crate::{
+    BillboardDepth, BillboardLockAxis, ATTRIBUTE_TEXTURE_ARRAY_INDEX, BILLBOARD_SHADER_HANDLE,
+};
 
 use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::ecs::query::ROQueryItem;
@@ -199,6 +201,7 @@ bitflags::bitflags! {
         const TEXTURE            = (1 << 0);
         const DEPTH              = (1 << 1);
         const LOCK_Y             = (1 << 2);
+        const LOCK_ROTATION      = (1 << 3);
         const MSAA_RESERVED_BITS = Self::MSAA_MASK_BITS << Self::MSAA_SHIFT_BITS;
     }
 }
@@ -274,6 +277,7 @@ impl SpecializedMeshPipeline for BillboardPipeline {
         const DEF_VERTEX_COLOR: &str = "VERTEX_COLOR";
         const DEF_VERTEX_TEXTURE_ARRAY: &str = "VERTEX_TEXTURE_ARRAY";
         const DEF_LOCK_Y: &str = "LOCK_Y";
+        const DEF_LOCK_ROTATION: &str = "LOCK_ROTATION";
 
         let mut shader_defs = Vec::with_capacity(4);
         let mut attributes = Vec::with_capacity(4);
@@ -300,6 +304,9 @@ impl SpecializedMeshPipeline for BillboardPipeline {
 
         if key.contains(BillboardPipelineKey::LOCK_Y) {
             shader_defs.push(DEF_LOCK_Y.into());
+        }
+        if key.contains(BillboardPipelineKey::LOCK_ROTATION) {
+            shader_defs.push(DEF_LOCK_ROTATION.into());
         }
 
         Ok(RenderPipelineDescriptor {
@@ -474,7 +481,7 @@ pub fn extract_billboard(
             &Handle<BillboardTexture>,
             &BillboardMeshHandle,
             &BillboardDepth,
-        ), Without<BillboardLockAxisY>>,
+        ), Without<BillboardLockAxis>>,
     >,
     query_lock: Extract<
         Query<(
@@ -484,8 +491,8 @@ pub fn extract_billboard(
             &Handle<BillboardTexture>,
             &BillboardMeshHandle,
             &BillboardDepth,
-            &BillboardLockAxisY,
-        ), With<BillboardLockAxisY>>,
+            &BillboardLockAxis,
+        ), With<BillboardLockAxis>>,
     >,
 ) {
     let mut values_lockless = Vec::with_capacity(*previous_len_lockless);
@@ -517,7 +524,7 @@ pub fn extract_billboard(
 
     let mut values_lock = Vec::with_capacity(*previous_len_lock);
 
-    for (entity, visibility, transform, texture_handle, mesh_handle, depth, lock_axis_y) in
+    for (entity, visibility, transform, texture_handle, mesh_handle, depth, lock_axis) in
         query_lock.iter()
     {
         if !visibility.is_visible() {
@@ -525,11 +532,16 @@ pub fn extract_billboard(
         }
 
         // TODO: Maybe reset rotation elsewhere
-        let (scale, _, translation) = transform.to_scale_rotation_translation();
+        let (scale, rotation, translation) = transform.to_scale_rotation_translation();
+        let rotation = if lock_axis.rotation {
+            rotation
+        } else {
+            Quat::default()
+        };
         let transform = Transform {
             translation,
             scale,
-            ..default()
+            rotation,
         }
         .compute_matrix();
 
@@ -540,7 +552,7 @@ pub fn extract_billboard(
                 BillboardMeshHandle(mesh_handle.0.clone_weak()),
                 BillboardUniform { transform },
                 *depth,
-                *lock_axis_y,
+                *lock_axis,
             ),
         ));
     }
@@ -618,7 +630,7 @@ pub fn queue_billboard_texture(
         &BillboardUniform,
         &BillboardMeshHandle,
         &BillboardDepth,
-        Option<&BillboardLockAxisY>,
+        Option<&BillboardLockAxis>,
     )>,
     events: Res<SpriteAssetEvents>,
 ) {
@@ -646,7 +658,7 @@ pub fn queue_billboard_texture(
                        billboard_uniform,
                        billboard_mesh_handle,
                        depth,
-                       lock_axis_y,
+                       lock_axis,
                    )) = billboards.get(*visible_entity) else { continue; };
             let Some(mesh) = render_meshes.get(&billboard_mesh_handle.0) else { continue; };
             let Some(billboard_texture) = billboard_textures.get(billboard_texture_handle) else { continue; };
@@ -663,8 +675,11 @@ pub fn queue_billboard_texture(
                 key |= BillboardPipelineKey::DEPTH;
             }
 
-            if lock_axis_y.is_some() {
+            if lock_axis.map_or(false, |lock| lock.y_axis) {
                 key |= BillboardPipelineKey::LOCK_Y;
+            }
+            if lock_axis.map_or(false, |lock| lock.rotation) {
+                key |= BillboardPipelineKey::LOCK_ROTATION;
             }
 
             let (array_handle, array_image, pipeline_id, texture_layout) = match billboard_type {
