@@ -67,7 +67,7 @@ pub fn update_billboard_text(
                 &text.sections,
                 1.0,
                 text.alignment,
-                text.linebreak_behaviour,
+                text.linebreak_behavior,
                 bounds.size,
                 &mut font_atlas_set_storage,
                 &mut texture_atlases,
@@ -217,7 +217,7 @@ fn build_text_mesh_and_texture(
 
         texture_atlas_handles.push(atlas.texture.clone_weak());
 
-        let mut image = images.get_mut(&atlas.texture).unwrap();
+        let image = images.get_mut(&atlas.texture).unwrap();
 
         image.texture_descriptor.usage = TextureUsages::COPY_SRC | TextureUsages::COPY_DST;
 

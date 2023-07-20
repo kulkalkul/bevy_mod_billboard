@@ -2,7 +2,6 @@ use crate::{
     BillboardDepth, BillboardLockAxis, ATTRIBUTE_TEXTURE_ARRAY_INDEX, BILLBOARD_SHADER_HANDLE,
 };
 
-use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::ecs::query::ROQueryItem;
 use bevy::ecs::system::lifetimeless::{Read, SRes};
 use bevy::ecs::system::{SystemParamItem, SystemState};
@@ -33,8 +32,9 @@ use bevy::render::view::{
 use bevy::render::Extract;
 use bevy::sprite::SpriteAssetEvents;
 use bevy::utils::{HashMap, HashSet};
+use bevy::{core_pipeline::core_3d::Transparent3d, reflect::TypePath};
 
-#[derive(Clone, Debug, TypeUuid)]
+#[derive(Clone, Debug, TypeUuid, TypePath)]
 #[uuid = "4977f56e-6ad1-4fe2-a8b3-a757036eeaac"]
 pub enum BillboardTexture {
     Single(Handle<Image>),
@@ -842,8 +842,8 @@ impl RenderCommand<Transparent3d> for DrawBillboardMesh {
                     pass.set_index_buffer(buffer.slice(..), 0, *index_format);
                     pass.draw_indexed(0..*count, 0, 0..1);
                 }
-                GpuBufferInfo::NonIndexed { vertex_count } => {
-                    pass.draw(0..*vertex_count, 0..1);
+                GpuBufferInfo::NonIndexed => {
+                    pass.draw(0..gpu_mesh.vertex_count, 0..1);
                 }
             }
 
