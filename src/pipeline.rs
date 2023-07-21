@@ -2,7 +2,7 @@ use crate::{
     BillboardDepth, BillboardLockAxis, ATTRIBUTE_TEXTURE_ARRAY_INDEX, BILLBOARD_SHADER_HANDLE,
 };
 
-use bevy::ecs::query::ROQueryItem;
+use bevy::{ecs::query::ROQueryItem, render::view::ViewTarget};
 use bevy::ecs::system::lifetimeless::{Read, SRes};
 use bevy::ecs::system::{SystemParamItem, SystemState};
 use bevy::prelude::*;
@@ -202,6 +202,7 @@ bitflags::bitflags! {
         const DEPTH              = (1 << 1);
         const LOCK_Y             = (1 << 2);
         const LOCK_ROTATION      = (1 << 3);
+        const HDR                = (1 << 4);
         const MSAA_RESERVED_BITS = Self::MSAA_MASK_BITS << Self::MSAA_SHIFT_BITS;
     }
 }
@@ -323,7 +324,7 @@ impl SpecializedMeshPipeline for BillboardPipeline {
                 entry_point: "fragment".into(),
                 shader_defs,
                 targets: vec![Some(ColorTargetState {
-                    format: TextureFormat::bevy_default(),
+                    format: if key.contains(BillboardPipelineKey::HDR) { ViewTarget::TEXTURE_FORMAT_HDR } else { TextureFormat::bevy_default() },
                     blend: Some(BlendState {
                         color: BlendComponent {
                             src_factor: BlendFactor::SrcAlpha,
@@ -680,6 +681,10 @@ pub fn queue_billboard_texture(
             }
             if lock_axis.map_or(false, |lock| lock.rotation) {
                 key |= BillboardPipelineKey::LOCK_ROTATION;
+            }
+
+            if view.hdr {
+                key |= BillboardPipelineKey::HDR;
             }
 
             let (array_handle, array_image, pipeline_id, texture_layout) = match billboard_type {
