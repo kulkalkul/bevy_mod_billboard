@@ -6,8 +6,8 @@ use bevy_mod_billboard::prelude::*;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(BillboardPlugin)
-        .add_startup_system(setup_scene)
+        .add_plugins(BillboardPlugin)
+        .add_systems(Startup, setup_scene)
         .run();
 }
 

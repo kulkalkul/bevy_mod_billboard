@@ -2,8 +2,7 @@ use crate::{
     BillboardDepth, BillboardLockAxis, ATTRIBUTE_TEXTURE_ARRAY_INDEX, BILLBOARD_SHADER_HANDLE,
 };
 
-use bevy::core_pipeline::core_3d::Transparent3d;
-use bevy::ecs::query::ROQueryItem;
+use bevy::{ecs::query::ROQueryItem, render::view::ViewTarget};
 use bevy::ecs::system::lifetimeless::{Read, SRes};
 use bevy::ecs::system::{SystemParamItem, SystemState};
 use bevy::prelude::*;
@@ -33,8 +32,9 @@ use bevy::render::view::{
 use bevy::render::Extract;
 use bevy::sprite::SpriteAssetEvents;
 use bevy::utils::{HashMap, HashSet};
+use bevy::{core_pipeline::core_3d::Transparent3d, reflect::TypePath};
 
-#[derive(Clone, Debug, TypeUuid)]
+#[derive(Clone, Debug, TypeUuid, TypePath)]
 #[uuid = "4977f56e-6ad1-4fe2-a8b3-a757036eeaac"]
 pub enum BillboardTexture {
     Single(Handle<Image>),
@@ -193,6 +193,7 @@ impl ArrayImageCached {
 // Reference:
 // https://github.com/bevyengine/bevy/blob/release-0.9.1/crates/bevy_sprite/src/mesh2d/mesh.rs#L282
 bitflags::bitflags! {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
     #[repr(transparent)]
     // NOTE: Apparently quadro drivers support up to 64x MSAA.
     // MSAA uses the highest 3 bits for the MSAA log2(sample count) to support up to 128x MSAA.
@@ -202,6 +203,7 @@ bitflags::bitflags! {
         const DEPTH              = (1 << 1);
         const LOCK_Y             = (1 << 2);
         const LOCK_ROTATION      = (1 << 3);
+        const HDR                = (1 << 4);
         const MSAA_RESERVED_BITS = Self::MSAA_MASK_BITS << Self::MSAA_SHIFT_BITS;
     }
 }
@@ -213,10 +215,10 @@ impl BillboardPipelineKey {
     pub fn from_msaa_samples(msaa_samples: u32) -> Self {
         let msaa_bits =
             (msaa_samples.trailing_zeros() & Self::MSAA_MASK_BITS) << Self::MSAA_SHIFT_BITS;
-        Self::from_bits(msaa_bits).unwrap()
+        Self::from_bits_retain(msaa_bits)
     }
     pub fn msaa_samples(&self) -> u32 {
-        1 << ((self.bits >> Self::MSAA_SHIFT_BITS) & Self::MSAA_MASK_BITS)
+        1 << ((self.bits() >> Self::MSAA_SHIFT_BITS) & Self::MSAA_MASK_BITS)
     }
 }
 
@@ -323,7 +325,7 @@ impl SpecializedMeshPipeline for BillboardPipeline {
                 entry_point: "fragment".into(),
                 shader_defs,
                 targets: vec![Some(ColorTargetState {
-                    format: TextureFormat::bevy_default(),
+                    format: if key.contains(BillboardPipelineKey::HDR) { ViewTarget::TEXTURE_FORMAT_HDR } else { TextureFormat::bevy_default() },
                     blend: Some(BlendState {
                         color: BlendComponent {
                             src_factor: BlendFactor::SrcAlpha,
@@ -682,6 +684,10 @@ pub fn queue_billboard_texture(
                 key |= BillboardPipelineKey::LOCK_ROTATION;
             }
 
+            if view.hdr {
+                key |= BillboardPipelineKey::HDR;
+            }
+
             let (array_handle, array_image, pipeline_id, texture_layout) = match billboard_type {
                 BillboardTextureType::Single(array_handle, array_image) => (
                     array_handle,
@@ -842,8 +848,8 @@ impl RenderCommand<Transparent3d> for DrawBillboardMesh {
                     pass.set_index_buffer(buffer.slice(..), 0, *index_format);
                     pass.draw_indexed(0..*count, 0, 0..1);
                 }
-                GpuBufferInfo::NonIndexed { vertex_count } => {
-                    pass.draw(0..*vertex_count, 0..1);
+                GpuBufferInfo::NonIndexed => {
+                    pass.draw(0..gpu_mesh.vertex_count, 0..1);
                 }
             }
 
