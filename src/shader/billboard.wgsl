@@ -52,7 +52,8 @@ struct VertexOutput {
 @vertex
 fn vertex(vertex: Vertex) -> VertexOutput {
 #ifdef LOCK_ROTATION
-    let position = view.view_proj * billboard.model * vec4<f32>(vertex.position, 1.0);
+    let vertex_position = vec4<f32>(-vertex.position.x, vertex.position.y, vertex.position.z, 1.0);
+    let position = view.view_proj * billboard.model * vertex_position;
 #else
     let camera_right = normalize(vec3<f32>(view.view_proj.x.x, view.view_proj.y.x, view.view_proj.z.x));
 #ifdef LOCK_Y

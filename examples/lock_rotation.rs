@@ -16,7 +16,7 @@ fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn((
             BillboardTextBundle {
                 transform: Transform::from_scale(Vec3::splat(0.0085))
-                    .looking_at(Vec3::splat(-5.0), Vec3::Y),
+                    .looking_at(Vec3::splat(5.0), Vec3::Y),
                 text: Text::from_sections([
                     TextSection {
                         value: "DISTRACTED".to_string(),
