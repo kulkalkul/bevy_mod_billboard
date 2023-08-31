@@ -219,7 +219,8 @@ fn build_text_mesh_and_texture(
 
         let image = images.get_mut(&atlas.texture).unwrap();
 
-        image.texture_descriptor.usage = TextureUsages::COPY_SRC | TextureUsages::COPY_DST;
+        image.texture_descriptor.usage =
+            TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_SRC | TextureUsages::COPY_DST;
 
         if atlas.size.cmpgt(biggest_size) != BVec2::FALSE {
             biggest_size = atlas.size;
