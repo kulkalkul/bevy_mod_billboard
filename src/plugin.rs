@@ -3,7 +3,7 @@ use crate::pipeline::{
     queue_billboard_view_bind_groups, ArrayImageCached, BillboardPipeline, BillboardTextPipeline,
     BillboardTexturePipeline, BillboardUniform, DrawBillboard, BillboardImageBindGroups,
 };
-use crate::text::update_billboard_text;
+use crate::text::{extract_billboard_text, update_billboard_text_layout};
 use crate::{
     BillboardMeshHandle, BillboardTextBounds, BillboardTexture, BILLBOARD_SHADER_HANDLE,
 };
@@ -34,7 +34,7 @@ impl Plugin for BillboardPlugin {
             .register_type::<BillboardMeshHandle>()
             .add_systems(
                 PostUpdate,
-                update_billboard_text.ambiguous_with(CameraUpdateSystem),
+                update_billboard_text_layout.ambiguous_with(CameraUpdateSystem),
             );
     }
 
@@ -49,7 +49,7 @@ impl Plugin for BillboardPlugin {
             .init_resource::<SpecializedMeshPipelines<BillboardTexturePipeline>>()
             .init_resource::<BillboardImageBindGroups>()
             .init_resource::<ArrayImageCached>()
-            .add_systems(ExtractSchedule, extract_billboard)
+            .add_systems(ExtractSchedule, extract_billboard_text)
             .add_systems(Render, queue_billboard_bind_group.in_set(RenderSet::Queue))
             .add_systems(
                 Render,
