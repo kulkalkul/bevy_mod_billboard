@@ -1,16 +1,15 @@
 use crate::pipeline::{
-    extract_billboard, queue_billboard_bind_group, queue_billboard_texture,
-    queue_billboard_view_bind_groups, ArrayImageCached, BillboardPipeline, BillboardTextPipeline,
-    BillboardTexturePipeline, BillboardUniform, DrawBillboard, BillboardImageBindGroups,
+    queue_billboard_bind_group, queue_billboard_texture,
+    queue_billboard_view_bind_groups, BillboardPipeline,
+    BillboardUniform, DrawBillboard, BillboardImageBindGroups,
 };
-use crate::text::{extract_billboard_text, update_billboard_text_layout};
+use crate::text::{extract_billboard_text, update_billboard_text_layout, ExtractedBillboards};
 use crate::{
-    BillboardMeshHandle, BillboardTextBounds, BillboardTexture, BILLBOARD_SHADER_HANDLE,
+    BillboardMeshHandle, BillboardTextBounds, BILLBOARD_SHADER_HANDLE,
 };
 use bevy::prelude::*;
 use bevy::render::camera::CameraUpdateSystem;
 use bevy::render::extract_component::UniformComponentPlugin;
-use bevy::render::render_asset::RenderAssetPlugin;
 use bevy::render::render_phase::AddRenderCommand;
 use bevy::render::render_resource::SpecializedMeshPipelines;
 use bevy::render::{RenderApp, RenderSet};
@@ -27,9 +26,8 @@ impl Plugin for BillboardPlugin {
             Shader::from_wgsl
         );
 
-        app.add_asset::<BillboardTexture>()
+        app
             .add_plugins(UniformComponentPlugin::<BillboardUniform>::default())
-            .add_plugins(RenderAssetPlugin::<BillboardTexture>::default())
             .register_type::<BillboardTextBounds>()
             .register_type::<BillboardMeshHandle>()
             .add_systems(
@@ -41,14 +39,10 @@ impl Plugin for BillboardPlugin {
     fn finish(&self, app: &mut App) {
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawBillboard>()
+            .init_resource::<ExtractedBillboards>()
             .init_resource::<BillboardPipeline>()
-            .init_resource::<BillboardTextPipeline>()
-            .init_resource::<BillboardTexturePipeline>()
             .init_resource::<SpecializedMeshPipelines<BillboardPipeline>>()
-            .init_resource::<SpecializedMeshPipelines<BillboardTextPipeline>>()
-            .init_resource::<SpecializedMeshPipelines<BillboardTexturePipeline>>()
             .init_resource::<BillboardImageBindGroups>()
-            .init_resource::<ArrayImageCached>()
             .add_systems(ExtractSchedule, extract_billboard_text)
             .add_systems(Render, queue_billboard_bind_group.in_set(RenderSet::Queue))
             .add_systems(

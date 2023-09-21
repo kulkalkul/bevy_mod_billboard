@@ -7,8 +7,10 @@ use bevy::text::{
     BreakLineOn, FontAtlasSet, FontAtlasWarning, PositionedGlyph, Text2dBounds, TextLayoutInfo,
     TextPipeline, TextSettings, YAxisOrientation,
 };
-use bevy::utils::{HashMap, HashSet};
+use bevy::utils::{hashbrown, HashMap, HashSet, PassHash};
 use smallvec::SmallVec;
+use crate::{BillboardDepth, BillboardLockAxis};
+use crate::pipeline::BillboardUniform;
 
 // Uses this as reference
 // https://github.com/bevyengine/bevy/blob/v0.11.2/crates/bevy_text/src/text2d.rs
@@ -17,7 +19,8 @@ use smallvec::SmallVec;
 #[reflect(Component)]
 pub struct BillboardTextBounds(pub Text2dBounds);
 
-#[derive(Component, Clone, Debug, Deref, Default)]
+// TODO: Maybe use something like { Single(Group), Multi(SmallVec<[Group; 1]>) }, benchmark it
+#[derive(Component, Clone, Debug, Deref, DerefMut, Default)]
 pub struct BillboardTextHandles(pub SmallVec<[BillboardTextHandleGroup; 1]>);
 
 #[derive(Clone, Debug, Default)]
@@ -27,12 +30,35 @@ pub struct BillboardTextHandleGroup {
 }
 
 pub fn extract_billboard_text(
-    mut extracted_billboard_fonts: ResMut<ExtractedBillboardFonts>,
-    billboard_text_query: Extract<Query<(&ComputedVisibility, &TextLayoutInfo, &Anchor, &BillboardTextHandles)>>,
+    mut commands: Commands,
+    mut extracted_billboard_fonts: ResMut<ExtractedBillboards>,
+    billboard_text_query: Extract<
+        Query<(
+            Entity,
+            &ComputedVisibility,
+            &Transform,
+            &TextLayoutInfo,
+            &Anchor,
+            &BillboardTextHandles,
+            &BillboardDepth,
+            Option<&BillboardLockAxis>,
+        )>,
+    >,
 ) {
-    extracted_billboard_fonts.fonts.clear();
+    extracted_billboard_fonts.billboards.clear();
 
-    for (visibility, info, anchor, handles) in &billboard_text_query {
+    let mut entities = Vec::new();
+
+    for (
+        entity,
+        visibility,
+        transform,
+        info,
+        anchor,
+        handles,
+        &depth,
+        lock_axis,
+    ) in &billboard_text_query {
         if !visibility.is_visible() {
             continue;
         }
@@ -40,17 +66,21 @@ pub fn extract_billboard_text(
         let text_anchor = -(anchor.as_vec() + 0.5);
         let alignment_translation = info.size * text_anchor;
 
+        let matrix = transform.compute_matrix();
+
         for handle_group in handles.iter() {
-            extracted_billboard_fonts
-                .fonts
-                .entry(handle_group.atlas.clone())
-                .or_default()
-                .push(ExtractedBillboardText {
-                    alignment_translation,
-                    mesh: handle_group.mesh.id(),
-                });
+            extracted_billboard_fonts.billboards.insert(entity, ExtractedBillboardText {
+                transform: matrix,
+                alignment_translation,
+                mesh: handle_group.mesh.id(),
+                texture: handle_group.atlas.id(),
+                depth,
+                lock_axis: lock_axis.copied(),
+            });
         }
+        entities.push((entity, BillboardUniform { transform: matrix }));
     }
+    commands.insert_or_spawn_batch(entities);
 }
 
 pub fn update_billboard_text_layout(
@@ -115,8 +145,8 @@ pub fn update_billboard_text_layout(
                 Ok(info) => info,
             };
 
-            let length = text_layout_info.glyphs.len();
 
+            let length = text_layout_info.glyphs.len();
             let mut atlases = HashMap::new();
 
             for glyph in &text_layout_info.glyphs {
@@ -143,6 +173,9 @@ pub fn update_billboard_text_layout(
                 let mut uvs = Vec::with_capacity(text_layout_info.glyphs.len() * 4);
                 let mut colors = Vec::with_capacity(text_layout_info.glyphs.len() * 4);
                 let mut indices = Vec::with_capacity(text_layout_info.glyphs.len() * 6);
+
+                let mut color = Color::WHITE.as_linear_rgba_f32();
+                let mut current_section = usize::MAX;
 
                 for PositionedGlyph {
                     position,
@@ -176,10 +209,14 @@ pub fn update_billboard_text_layout(
                         [max.x, max.y],
                     ]);
 
-                    let color = text.sections[section_index]
-                        .style
-                        .color
-                        .as_linear_rgba_f32();
+                    if section_index != current_section {
+                        color = text.sections[section_index]
+                            .style
+                            .color
+                            .as_linear_rgba_f32();
+                        current_section = section_index;
+                    }
+
                     colors.extend([color, color, color, color]);
 
                     indices.extend([index, index + 2, index + 1, index, index + 3, index + 2]);
@@ -197,19 +234,23 @@ pub fn update_billboard_text_layout(
                     mesh: meshes.add(mesh),
                     atlas: handle,
                 });
-
             }
+
             *text_layout_info = info;
         }
     }
 }
 
 #[derive(Resource, Default)]
-pub struct ExtractedBillboardFonts {
-    fonts: HashMap<Handle<TextureAtlas>, Vec<ExtractedBillboardText>>,
+pub struct ExtractedBillboards {
+    pub billboards: hashbrown::HashMap<Entity, ExtractedBillboardText, PassHash>,
 }
 
 pub struct ExtractedBillboardText {
-    alignment_translation: Vec2,
-    mesh: HandleId,
+    pub alignment_translation: Vec2,
+    pub mesh: HandleId,
+    pub texture: HandleId,
+    pub depth: BillboardDepth,
+    pub lock_axis: Option<BillboardLockAxis>,
+    pub transform: Mat4,
 }
