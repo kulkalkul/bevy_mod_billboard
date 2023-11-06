@@ -6,7 +6,6 @@ use bevy::{ecs::query::ROQueryItem, render::view::ViewTarget};
 use bevy::ecs::system::lifetimeless::{Read, SRes};
 use bevy::ecs::system::{SystemParamItem, SystemState};
 use bevy::prelude::*;
-use bevy::reflect::TypeUuid;
 use bevy::render::extract_component::{ComponentUniforms, DynamicUniformIndex};
 use bevy::render::mesh::{GpuBufferInfo, MeshVertexBufferLayout, PrimitiveTopology};
 use bevy::render::render_asset::{PrepareAssetError, RenderAsset, RenderAssets};
@@ -15,7 +14,7 @@ use bevy::render::render_phase::{
     TrackedRenderPass,
 };
 use bevy::render::render_resource::{
-    BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
+    BindGroup, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor,
     BindGroupLayoutEntry, BindingResource, BindingType, BlendComponent, BlendFactor,
     BlendOperation, BlendState, BufferBindingType, ColorTargetState, ColorWrites,
     CommandEncoderDescriptor, CompareFunction, DepthStencilState, Extent3d, FragmentState,
@@ -34,8 +33,7 @@ use bevy::sprite::SpriteAssetEvents;
 use bevy::utils::{HashMap, HashSet};
 use bevy::{core_pipeline::core_3d::Transparent3d, reflect::TypePath};
 
-#[derive(Clone, Debug, TypeUuid, TypePath)]
-#[uuid = "4977f56e-6ad1-4fe2-a8b3-a757036eeaac"]
+#[derive(Clone, Debug, TypePath)]
 pub enum BillboardTexture {
     Single(Handle<Image>),
     Array {
@@ -43,6 +41,27 @@ pub enum BillboardTexture {
         atlas_handles: Vec<Handle<Image>>,
     },
     Empty,
+}
+
+// TODO remove this custom asset impl when https://github.com/bevyengine/bevy/pull/10410 lands
+impl bevy::asset::Asset for BillboardTexture {}
+
+impl bevy::asset::VisitAssetDependencies for BillboardTexture {
+    fn visit_dependencies(&self, visit: &mut impl FnMut(bevy::asset::UntypedAssetId)) {
+        match self {
+            Self::Single(member_0) => {
+                bevy::asset::VisitAssetDependencies::visit_dependencies(member_0, visit);
+            }
+            Self::Array {
+                array_handle,
+                atlas_handles,
+            } => {
+                bevy::asset::VisitAssetDependencies::visit_dependencies(array_handle, visit);
+                bevy::asset::VisitAssetDependencies::visit_dependencies(atlas_handles, visit);
+            }
+            Self::Empty => {}
+        }
+    }
 }
 
 impl BillboardTexture {
@@ -79,8 +98,8 @@ impl RenderAsset for BillboardTexture {
 }
 
 enum BillboardTextureType<'image> {
-    Single(Handle<Image>, &'image GpuImage),
-    Array(Handle<Image>, &'image GpuImage),
+    Single(AssetId<Image>, &'image GpuImage),
+    Array(AssetId<Image>, &'image GpuImage),
 }
 
 #[derive(Default, Clone, Component, Debug, Reflect)]
@@ -110,7 +129,7 @@ pub struct BillboardViewBindGroup {
 
 #[derive(Resource, Default)]
 pub struct BillboardImageBindGroups {
-    values: HashMap<Handle<Image>, BindGroup>,
+    values: HashMap<AssetId<Image>, BindGroup>,
 }
 
 #[derive(Resource, Default)]
@@ -131,7 +150,7 @@ impl ArrayImageCached {
             BillboardTexture::Single(handle) => {
                 let Some(image) = render_images.get(handle) else { return None; };
 
-                Some(BillboardTextureType::Single(handle.clone_weak(), image))
+                Some(BillboardTextureType::Single(handle.id(), image))
             }
             BillboardTexture::Array {
                 array_handle,
@@ -140,7 +159,7 @@ impl ArrayImageCached {
                 let Some(array_image) = render_images.get(array_handle) else { return None; };
                 if self.cached.contains(array_handle) {
                     return Some(BillboardTextureType::Array(
-                        array_handle.clone_weak(),
+                        array_handle.id(),
                         array_image,
                     ));
                 }
@@ -182,7 +201,7 @@ impl ArrayImageCached {
 
                 render_queue.submit(vec![command_encoder.finish()]);
                 Some(BillboardTextureType::Array(
-                    array_handle.clone_weak(),
+                    array_handle.id(),
                     array_image,
                 ))
             }
@@ -315,13 +334,13 @@ impl SpecializedMeshPipeline for BillboardPipeline {
             label: Some("billboard_pipeline".into()),
             layout: vec![self.view_layout.clone(), self.billboard_layout.clone()],
             vertex: VertexState {
-                shader: BILLBOARD_SHADER_HANDLE.typed::<Shader>(),
+                shader: BILLBOARD_SHADER_HANDLE,
                 entry_point: "vertex".into(),
                 buffers: vec![vertex_buffer_layout],
                 shader_defs: shader_defs.clone(),
             },
             fragment: Some(FragmentState {
-                shader: BILLBOARD_SHADER_HANDLE.typed::<Shader>(),
+                shader: BILLBOARD_SHADER_HANDLE,
                 entry_point: "fragment".into(),
                 shader_defs,
                 targets: vec![Some(ColorTargetState {
@@ -478,7 +497,7 @@ pub fn extract_billboard(
     query_lockless: Extract<
         Query<(
             Entity,
-            &ComputedVisibility,
+            &ViewVisibility,
             &GlobalTransform,
             &Handle<BillboardTexture>,
             &BillboardMeshHandle,
@@ -488,7 +507,7 @@ pub fn extract_billboard(
     query_lock: Extract<
         Query<(
             Entity,
-            &ComputedVisibility,
+            &ViewVisibility,
             &GlobalTransform,
             &Handle<BillboardTexture>,
             &BillboardMeshHandle,
@@ -500,7 +519,7 @@ pub fn extract_billboard(
     let mut values_lockless = Vec::with_capacity(*previous_len_lockless);
 
     for (entity, visibility, transform, texture_handle, mesh_handle, depth) in query_lockless.iter() {
-        if !visibility.is_visible() {
+        if !visibility.get() {
             continue;
         }
 
@@ -529,7 +548,7 @@ pub fn extract_billboard(
     for (entity, visibility, transform, texture_handle, mesh_handle, depth, lock_axis) in
         query_lock.iter()
     {
-        if !visibility.is_visible() {
+        if !visibility.get() {
             continue;
         }
 
@@ -576,14 +595,14 @@ pub fn queue_billboard_view_bind_groups(
 
     for entity in views.iter() {
         commands.entity(entity).insert(BillboardViewBindGroup {
-            value: render_device.create_bind_group(&BindGroupDescriptor {
-                label: Some("billboard_view_bind_group"),
-                layout: &billboard_pipeline.view_layout,
-                entries: &[BindGroupEntry {
+            value: render_device.create_bind_group(
+                Some("billboard_view_bind_group"),
+                &billboard_pipeline.view_layout,
+                &[BindGroupEntry {
                     binding: 0,
                     resource: binding.clone(),
                 }],
-            }),
+            ),
         });
     }
 }
@@ -597,14 +616,14 @@ pub fn queue_billboard_bind_group(
     let Some(binding) = billboard_uniforms.uniforms().binding() else { return; };
 
     commands.insert_resource(BillboardBindGroup {
-        value: render_device.create_bind_group(&BindGroupDescriptor {
-            label: Some("billboard_bind_group"),
-            layout: &billboard_pipeline.billboard_layout,
-            entries: &[BindGroupEntry {
+        value: render_device.create_bind_group(
+            Some("billboard_bind_group"),
+            &billboard_pipeline.billboard_layout,
+            &[BindGroupEntry {
                 binding: 0,
                 resource: binding,
             }],
-        }),
+        ),
     });
 }
 
@@ -639,9 +658,9 @@ pub fn queue_billboard_texture(
     // If an image has changed, the GpuImage has (probably) changed
     for event in &events.images {
         match event {
-            AssetEvent::Created { .. } => None,
-            AssetEvent::Modified { handle } | AssetEvent::Removed { handle } => {
-                image_bind_groups.values.remove(handle)
+            AssetEvent::Added { .. } | AssetEvent::LoadedWithDependencies { .. }=> None,
+            AssetEvent::Modified { id } | AssetEvent::Removed { id } => {
+                image_bind_groups.values.remove(id)
             }
         };
     }
@@ -727,10 +746,10 @@ pub fn queue_billboard_texture(
                 .values
                 .entry(array_handle)
                 .or_insert_with(|| {
-                    render_device.create_bind_group(&BindGroupDescriptor {
-                        label: Some("billboard_texture_bind_group"),
-                        layout: texture_layout,
-                        entries: &[
+                    render_device.create_bind_group(
+                        Some("billboard_texture_bind_group"),
+                        texture_layout,
+                        &[
                             BindGroupEntry {
                                 binding: 0,
                                 resource: BindingResource::TextureView(&array_image.texture_view),
@@ -740,7 +759,7 @@ pub fn queue_billboard_texture(
                                 resource: BindingResource::Sampler(&array_image.sampler),
                             },
                         ],
-                    })
+                    )
                 });
 
             transparent_phase.add(Transparent3d {
@@ -748,6 +767,8 @@ pub fn queue_billboard_texture(
                 entity: *visible_entity,
                 draw_function: draw_transparent_billboard,
                 distance,
+                batch_range: 0..1,
+                dynamic_offset: None,                
             });
         }
     }
@@ -813,7 +834,7 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardTextureBindGro
         match billboard_texture.handle() {
             None => RenderCommandResult::Failure,
             Some(handle) => {
-                let bind_group = images.into_inner().values.get(handle).unwrap();
+                let bind_group = images.into_inner().values.get(&handle.id()).unwrap();
 
                 pass.set_bind_group(I, bind_group, &[]);
 

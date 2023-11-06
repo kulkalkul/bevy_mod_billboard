@@ -1,5 +1,5 @@
 use crate::{BillboardMeshHandle, BillboardTexture, ATTRIBUTE_TEXTURE_ARRAY_INDEX};
-use bevy::prelude::*;
+use bevy::{prelude::*, text::FontAtlasSets};
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_resource::{
     Extent3d, TextureDimension, TextureFormat, TextureUsages, TextureViewDescriptor,
@@ -7,7 +7,7 @@ use bevy::render::render_resource::{
 };
 use bevy::sprite::Anchor;
 use bevy::text::{
-    FontAtlasSet, FontAtlasWarning, PositionedGlyph, TextLayoutInfo, TextPipeline, TextSettings,
+    FontAtlasWarning, PositionedGlyph, TextLayoutInfo, TextPipeline, TextSettings,
     YAxisOrientation,
 };
 use bevy::utils::{HashMap, HashSet};
@@ -50,7 +50,7 @@ pub fn update_billboard_text(
     mut font_atlas_warning: ResMut<FontAtlasWarning>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut billboard_textures: ResMut<Assets<BillboardTexture>>,
-    mut font_atlas_set_storage: ResMut<Assets<FontAtlasSet>>,
+    mut font_atlas_set_storage: ResMut<FontAtlasSets>,
     mut text_pipeline: ResMut<TextPipeline>,
     mut text_query: Query<(
         Entity,
@@ -88,7 +88,7 @@ pub fn update_billboard_text(
             };
 
             let text_anchor = -(anchor.as_vec() + 0.5);
-            let alignment_translation = info.size * text_anchor;
+            let alignment_translation = info.logical_size * text_anchor;
 
             let text_mesh_and_texture = build_text_mesh_and_texture(
                 &text.sections,

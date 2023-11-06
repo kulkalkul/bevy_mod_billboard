@@ -3,15 +3,13 @@ pub mod plugin;
 pub mod text;
 
 use bevy::prelude::*;
-use bevy::reflect::TypeUuid;
 use bevy::render::mesh::MeshVertexAttribute;
 use bevy::render::render_resource::VertexFormat;
 use bevy::sprite::Anchor;
 use crate::pipeline::{BillboardMeshHandle, BillboardTexture};
 use crate::text::BillboardTextBounds;
 
-pub(self) const BILLBOARD_SHADER_HANDLE: HandleUntyped =
-    HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 12823766040132746076);
+pub(self) const BILLBOARD_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(12823766040132746076);
 
 pub(self) const ATTRIBUTE_TEXTURE_ARRAY_INDEX: MeshVertexAttribute =
     MeshVertexAttribute::new("TextureArrayIndex", 584807746, VertexFormat::Sint32);
@@ -44,7 +42,8 @@ pub struct BillboardTextureBundle {
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
-    pub computed_visibility: ComputedVisibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
     pub billboard_depth: BillboardDepth,
 }
 
@@ -56,7 +55,8 @@ pub struct BillboardTextBundle {
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
-    pub computed_visibility: ComputedVisibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
     pub billboard_depth: BillboardDepth,
 }
 

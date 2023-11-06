@@ -27,7 +27,7 @@ impl Plugin for BillboardPlugin {
             Shader::from_wgsl
         );
 
-        app.add_asset::<BillboardTexture>()
+        app.init_asset::<BillboardTexture>()
             .add_plugins(UniformComponentPlugin::<BillboardUniform>::default())
             .add_plugins(RenderAssetPlugin::<BillboardTexture>::default())
             .register_type::<BillboardTextBounds>()
@@ -50,10 +50,10 @@ impl Plugin for BillboardPlugin {
             .init_resource::<BillboardImageBindGroups>()
             .init_resource::<ArrayImageCached>()
             .add_systems(ExtractSchedule, extract_billboard)
-            .add_systems(Render, queue_billboard_bind_group.in_set(RenderSet::Queue))
+            .add_systems(Render, queue_billboard_bind_group.in_set(RenderSet::PrepareBindGroups))
             .add_systems(
                 Render,
-                queue_billboard_view_bind_groups.in_set(RenderSet::Queue),
+                queue_billboard_view_bind_groups.in_set(RenderSet::PrepareBindGroups),
             )
             .add_systems(Render, queue_billboard_texture.in_set(RenderSet::Queue));
     }
