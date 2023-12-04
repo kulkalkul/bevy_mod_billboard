@@ -3,14 +3,14 @@ use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::Extract;
 use bevy::sprite::Anchor;
 use bevy::text::{
-    BreakLineOn, FontAtlasSet, FontAtlasWarning, PositionedGlyph, Text2dBounds, TextLayoutInfo,
+    BreakLineOn, FontAtlasSet, FontAtlasWarning, PositionedGlyph, Text2dBounds,
     TextPipeline, TextSettings, YAxisOrientation,
 };
 use bevy::utils::{HashMap, HashSet};
 use smallvec::SmallVec;
-use crate::pipeline::RenderBillboardImage;
-use crate::prelude::RenderBillboardMesh;
-use crate::{BillboardDepth, BillboardLockAxis, BillboardUniform};
+use crate::pipeline::{RenderBillboardImage, RenderBillboardMesh};
+use crate::utils::calculate_billboard_uniform;
+use crate::{BillboardDepth, BillboardLockAxis};
 
 // Uses this as reference
 // https://github.com/bevyengine/bevy/blob/v0.11.2/crates/bevy_text/src/text2d.rs
@@ -36,8 +36,8 @@ pub fn extract_billboard_text(
         Query<(
             Entity,
             &ComputedVisibility,
+            &GlobalTransform,
             &Transform,
-            &TextLayoutInfo,
             &BillboardTextHandles,
             &BillboardDepth,
             Option<&BillboardLockAxis>,
@@ -49,8 +49,8 @@ pub fn extract_billboard_text(
     for (
         entity,
         visibility,
+        global_transform,
         transform,
-        info,
         handles,
         &depth,
         lock_axis,
@@ -59,14 +59,7 @@ pub fn extract_billboard_text(
             continue;
         }
 
-        let transform = Mat4::from_cols(
-            Mat4::IDENTITY.x_axis * transform.scale.x,
-            Mat4::IDENTITY.y_axis * transform.scale.y,
-            Mat4::IDENTITY.z_axis * transform.scale.z,
-            Vec4::from((transform.translation, 1.0)),
-        );
-
-        let uniform = BillboardUniform { transform };
+        let uniform = calculate_billboard_uniform(global_transform, transform, lock_axis);
 
         for handle_group in handles.iter() {
             batch.push((
@@ -102,9 +95,8 @@ pub fn update_billboard_text_layout(
         Entity,
         Ref<Text>,
         Ref<BillboardTextBounds>,
-        &mut TextLayoutInfo,
+        Ref<Anchor>,
         &mut BillboardTextHandles,
-        &Anchor,
     )>,
 ) {
     const SCALE_FACTOR: f64 = 1.0;
@@ -113,11 +105,10 @@ pub fn update_billboard_text_layout(
         entity,
         text,
         bounds,
-        mut text_layout_info,
-        mut billboard_text_handles,
         anchor,
+        mut billboard_text_handles,
     ) in &mut text_query {
-        if text.is_changed() || bounds.is_changed() || queue.remove(&entity) {
+        if text.is_changed() || bounds.is_changed() || anchor.is_changed() || queue.remove(&entity) {
             let text_bounds = Vec2::new(
                 if text.linebreak_behavior == BreakLineOn::NoWrap {
                     f32::INFINITY
@@ -245,8 +236,6 @@ pub fn update_billboard_text_layout(
                     image: atlas.texture.clone_weak(),
                 });
             }
-
-            *text_layout_info = info;
         }
     }
 }

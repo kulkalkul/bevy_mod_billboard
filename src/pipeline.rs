@@ -3,6 +3,7 @@ use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::ecs::query::ROQueryItem;
 use bevy::ecs::system::lifetimeless::{Read, SRes};
 use bevy::ecs::system::{SystemParamItem, SystemState};
+use bevy::math::Mat4;
 use bevy::prelude::{AssetEvent, Commands, Component, default, Entity, error, FromWorld, Handle, Image, Mesh, Msaa, Query, Res, ResMut, Resource, Shader, With, World};
 use bevy::render::extract_component::{DynamicUniformIndex, ComponentUniforms};
 use bevy::render::mesh::{GpuBufferInfo, MeshVertexBufferLayout, PrimitiveTopology};
@@ -15,7 +16,12 @@ use bevy::render::view::{ExtractedView, ViewTarget, ViewUniform, ViewUniformOffs
 use bevy::sprite::SpriteAssetEvents;
 use bevy::utils;
 use crate::text::RenderBillboard;
-use crate::{BILLBOARD_SHADER_HANDLE, BillboardUniform};
+use crate::BILLBOARD_SHADER_HANDLE;
+
+#[derive(Clone, Copy, ShaderType, Component)]
+pub struct BillboardUniform {
+    pub(crate) transform: Mat4,
+}
 
 #[derive(Clone, Copy, Component, Debug)]
 pub struct RenderBillboardMesh {
@@ -27,6 +33,11 @@ pub struct RenderBillboardImage {
     pub id: HandleId,
 }
 
+#[derive(Resource, Default)]
+pub struct BillboardImageBindGroups {
+    values: utils::HashMap<Handle<Image>, BindGroup>,
+}
+
 #[derive(Resource)]
 pub struct BillboardBindGroup {
     value: BindGroup,
@@ -35,11 +46,6 @@ pub struct BillboardBindGroup {
 #[derive(Component)]
 pub struct BillboardViewBindGroup {
     value: BindGroup,
-}
-
-#[derive(Resource, Default)]
-pub struct BillboardImageBindGroups {
-    values: utils::HashMap<Handle<Image>, BindGroup>,
 }
 
 // Reference:
