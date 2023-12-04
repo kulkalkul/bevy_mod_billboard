@@ -1,6 +1,6 @@
 use crate::pipeline::{
-    queue_billboard_bind_group, queue_billboard_texture,
-    queue_billboard_view_bind_groups, BillboardPipeline,
+    prepare_billboard_bind_group, queue_billboard_texture,
+    prepare_billboard_view_bind_groups, BillboardPipeline,
     DrawBillboard, BillboardUniform, BillboardImageBindGroups,
 };
 use crate::text::{extract_billboard_text, update_billboard_text_layout};
@@ -45,11 +45,11 @@ impl Plugin for BillboardPlugin {
             .init_resource::<SpecializedMeshPipelines<BillboardPipeline>>()
             .init_resource::<BillboardImageBindGroups>()
             .add_systems(ExtractSchedule, (extract_billboard_text, extract_billboard_texture))
-            .add_systems(Render, queue_billboard_bind_group.in_set(RenderSet::Queue))
+            .add_systems(Render, queue_billboard_texture.in_set(RenderSet::Queue))
+            .add_systems(Render, prepare_billboard_bind_group.in_set(RenderSet::PrepareBindGroups))
             .add_systems(
                 Render,
-                queue_billboard_view_bind_groups.in_set(RenderSet::Queue),
-            )
-            .add_systems(Render, queue_billboard_texture.in_set(RenderSet::Queue));
+                prepare_billboard_view_bind_groups.in_set(RenderSet::PrepareBindGroups),
+            );
     }
 }

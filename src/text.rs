@@ -3,8 +3,8 @@ use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::Extract;
 use bevy::sprite::Anchor;
 use bevy::text::{
-    BreakLineOn, FontAtlasSet, FontAtlasWarning, PositionedGlyph, Text2dBounds,
-    TextPipeline, TextSettings, YAxisOrientation,
+    BreakLineOn, FontAtlasWarning, PositionedGlyph, Text2dBounds,
+    TextPipeline, TextSettings, YAxisOrientation, FontAtlasSets,
 };
 use bevy::utils::{HashMap, HashSet};
 use smallvec::SmallVec;
@@ -35,7 +35,7 @@ pub fn extract_billboard_text(
     billboard_text_query: Extract<
         Query<(
             Entity,
-            &ComputedVisibility,
+            &ViewVisibility,
             &GlobalTransform,
             &Transform,
             &BillboardTextHandles,
@@ -55,7 +55,7 @@ pub fn extract_billboard_text(
         &depth,
         lock_axis,
     ) in &billboard_text_query {
-        if !visibility.is_visible() {
+        if !visibility.get() {
             continue;
         }
 
@@ -89,7 +89,7 @@ pub fn update_billboard_text_layout(
     text_settings: Res<TextSettings>,
     mut font_atlas_warning: ResMut<FontAtlasWarning>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut font_atlas_set_storage: ResMut<Assets<FontAtlasSet>>,
+    mut font_atlas_set_storage: ResMut<FontAtlasSets>,
     mut text_pipeline: ResMut<TextPipeline>,
     mut text_query: Query<(
         Entity,
@@ -144,7 +144,7 @@ pub fn update_billboard_text_layout(
             };
 
             let text_anchor = -(anchor.as_vec() + 0.5);
-            let alignment_translation = info.size * text_anchor;
+            let alignment_translation = info.logical_size * text_anchor;
             
             let length = info.glyphs.len();
             let mut atlases = HashMap::new();

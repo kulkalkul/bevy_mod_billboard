@@ -5,12 +5,10 @@ pub mod texture;
 mod utils;
 
 use bevy::prelude::*;
-use bevy::reflect::TypeUuid;
 use bevy::sprite::Anchor;
 use crate::text::{BillboardTextBounds, BillboardTextHandles};
 
-pub(self) const BILLBOARD_SHADER_HANDLE: HandleUntyped =
-    HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 12823766040132746076);
+pub(self) const BILLBOARD_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(12823766040132746076);
 
 #[derive(Clone, Component, Reflect, Default)]
 #[reflect(Component)]
@@ -48,7 +46,8 @@ pub struct BillboardTextureBundle {
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
-    pub computed_visibility: ComputedVisibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
     pub billboard_depth: BillboardDepth,
 }
 
@@ -60,7 +59,8 @@ pub struct BillboardTextBundle {
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
-    pub computed_visibility: ComputedVisibility,
+    pub inherited_visibility: InheritedVisibility,
+    pub view_visibility: ViewVisibility,
     pub billboard_depth: BillboardDepth,
     pub billboard_text_handles: BillboardTextHandles,
 }
