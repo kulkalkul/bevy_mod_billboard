@@ -3,9 +3,9 @@ use crate::pipeline::{
     queue_billboard_view_bind_groups, BillboardPipeline,
     DrawBillboard, BillboardImageBindGroups,
 };
-use crate::text::{extract_billboard_text, update_billboard_text_layout, ExtractedBillboards};
+use crate::text::{extract_billboard_text, update_billboard_text_layout};
 use crate::{
-    BillboardMeshHandle, BillboardTextBounds, BILLBOARD_SHADER_HANDLE, BillboardUniform,
+    BillboardTextBounds, BILLBOARD_SHADER_HANDLE, BillboardUniform, BillboardMesh,
 };
 use bevy::prelude::*;
 use bevy::render::camera::CameraUpdateSystem;
@@ -29,7 +29,7 @@ impl Plugin for BillboardPlugin {
         app
             .add_plugins(UniformComponentPlugin::<BillboardUniform>::default())
             .register_type::<BillboardTextBounds>()
-            .register_type::<BillboardMeshHandle>()
+            .register_type::<BillboardMesh>()
             .add_systems(
                 PostUpdate,
                 update_billboard_text_layout.ambiguous_with(CameraUpdateSystem),
@@ -39,7 +39,6 @@ impl Plugin for BillboardPlugin {
     fn finish(&self, app: &mut App) {
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawBillboard>()
-            .init_resource::<ExtractedBillboards>()
             .init_resource::<BillboardPipeline>()
             .init_resource::<SpecializedMeshPipelines<BillboardPipeline>>()
             .init_resource::<BillboardImageBindGroups>()

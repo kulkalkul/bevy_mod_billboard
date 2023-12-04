@@ -1,10 +1,9 @@
-use bevy::ecs::reflect::ReflectComponent;
 use bevy::asset::HandleId;
 use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::ecs::query::ROQueryItem;
 use bevy::ecs::system::lifetimeless::{Read, SRes};
 use bevy::ecs::system::{SystemParamItem, SystemState};
-use bevy::prelude::{AssetEvent, Commands, Component, default, Entity, error, FromWorld, Handle, Image, Mesh, Msaa, Query, Reflect, Res, ResMut, Resource, Shader, With, World};
+use bevy::prelude::{AssetEvent, Commands, Component, default, Entity, error, FromWorld, Handle, Image, Mesh, Msaa, Query, Res, ResMut, Resource, Shader, With, World};
 use bevy::render::extract_component::{DynamicUniformIndex, ComponentUniforms};
 use bevy::render::mesh::{GpuBufferInfo, MeshVertexBufferLayout, PrimitiveTopology};
 use bevy::render::render_asset::RenderAssets;
@@ -15,17 +14,17 @@ use bevy::render::texture::BevyDefault;
 use bevy::render::view::{ExtractedView, ViewTarget, ViewUniform, ViewUniformOffset, ViewUniforms, VisibleEntities};
 use bevy::sprite::SpriteAssetEvents;
 use bevy::utils;
+use crate::text::RenderBillboard;
 use crate::{BILLBOARD_SHADER_HANDLE, BillboardUniform};
-use crate::text::ExtractedBillboards;
 
-#[derive(Default, Clone, Component, Debug, Reflect)]
-#[reflect(Component)]
-pub struct BillboardMeshHandle(pub Handle<Mesh>);
+#[derive(Clone, Copy, Component, Debug)]
+pub struct RenderBillboardMesh {
+    pub id: HandleId,
+}
 
-impl From<Handle<Mesh>> for BillboardMeshHandle {
-    fn from(handle: Handle<Mesh>) -> Self {
-        Self(handle)
-    }
+#[derive(Clone, Copy, Component, Debug)]
+pub struct RenderBillboardImage {
+    pub id: HandleId,
 }
 
 #[derive(Resource)]
@@ -41,11 +40,6 @@ pub struct BillboardViewBindGroup {
 #[derive(Resource, Default)]
 pub struct BillboardImageBindGroups {
     values: utils::HashMap<Handle<Image>, BindGroup>,
-}
-
-#[derive(Component)]
-pub struct BillboardRenderTexture {
-    id: HandleId,
 }
 
 // Reference:
@@ -138,7 +132,12 @@ pub fn queue_billboard_texture(
     billboard_pipeline: Res<BillboardPipeline>,
     (gpu_images, gpu_meshes): (Res<RenderAssets<Image>>, Res<RenderAssets<Mesh>>),
     events: Res<SpriteAssetEvents>,
-    extracted_billboards: Res<ExtractedBillboards>,
+    billboards: Query<(
+        &BillboardUniform,
+        &RenderBillboardMesh,
+        &RenderBillboardImage,
+        &RenderBillboard,
+    )>,
 ) {
     // If an image has changed, the GpuImage has (probably) changed
     for event in &events.images {
@@ -159,20 +158,25 @@ pub fn queue_billboard_texture(
         let rangefinder = view.rangefinder3d();
 
         for visible_entity in &visible_entities.entities {
-            let Some(extracted) = extracted_billboards.billboards.get(visible_entity) else { continue; };
-            let Some(gpu_mesh) = gpu_meshes.get(&Handle::weak(extracted.mesh)) else { continue; };
-            let Some(gpu_image) = gpu_images.get(&Handle::weak(extracted.texture)) else { continue; };
+            let Ok((
+                uniform,
+                mesh,
+                image,
+                billboard,
+            )) = billboards.get(*visible_entity) else { continue; };
+            let Some(gpu_image) = gpu_images.get(&Handle::weak(image.id)) else { continue; };
+            let Some(gpu_mesh) = gpu_meshes.get(&Handle::weak(mesh.id)) else { continue; };
 
             let mut key = BillboardPipelineKey::from_msaa_samples(msaa.samples());
 
-            if extracted.depth.0 {
+            if billboard.depth.0 {
                 key |= BillboardPipelineKey::DEPTH;
             }
 
-            if extracted.lock_axis.map_or(false, |lock| lock.y_axis) {
+            if billboard.lock_axis.map_or(false, |lock| lock.y_axis) {
                 key |= BillboardPipelineKey::LOCK_Y;
             }
-            if extracted.lock_axis.map_or(false, |lock| lock.rotation) {
+            if billboard.lock_axis.map_or(false, |lock| lock.rotation) {
                 key |= BillboardPipelineKey::LOCK_ROTATION;
             }
 
@@ -195,11 +199,11 @@ pub fn queue_billboard_texture(
                 }
             };
 
-            let distance = rangefinder.distance(&extracted.transform);
+            let distance = rangefinder.distance(&uniform.transform);
 
             image_bind_groups
                 .values
-                .entry(Handle::weak(extracted.texture))
+                .entry(Handle::weak(image.id))
                 .or_insert_with(|| {
                     render_device.create_bind_group(&BindGroupDescriptor {
                         label: Some("billboard_texture_bind_group"),
@@ -445,7 +449,7 @@ pub struct SetBillboardTextureBindGroup<const I: usize>;
 impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardTextureBindGroup<I> {
     type Param = SRes<BillboardImageBindGroups>;
     type ViewWorldQuery = ();
-    type ItemWorldQuery = Read<BillboardRenderTexture>;
+    type ItemWorldQuery = Read<RenderBillboardImage>;
 
     fn render<'w>(
         _item: &Transparent3d,
@@ -466,16 +470,16 @@ pub struct DrawBillboardMesh;
 impl RenderCommand<Transparent3d> for DrawBillboardMesh {
     type Param = SRes<RenderAssets<Mesh>>;
     type ViewWorldQuery = ();
-    type ItemWorldQuery = Read<BillboardMeshHandle>;
+    type ItemWorldQuery = Read<RenderBillboardMesh>;
 
     fn render<'w>(
         _item: &Transparent3d,
         _view: ROQueryItem<'w, Self::ViewWorldQuery>,
-        billboard_mesh_handle: ROQueryItem<'w, Self::ItemWorldQuery>,
+        mesh: ROQueryItem<'w, Self::ItemWorldQuery>,
         meshes: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        if let Some(gpu_mesh) = meshes.into_inner().get(&billboard_mesh_handle.0) {
+        if let Some(gpu_mesh) = meshes.into_inner().get(&Handle::weak(mesh.id)) {
             pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
 
             match &gpu_mesh.buffer_info {

@@ -7,7 +7,6 @@ use bevy::reflect::TypeUuid;
 use bevy::render::render_resource::ShaderType;
 use bevy::sprite::Anchor;
 use bevy::text::TextLayoutInfo;
-use crate::pipeline::BillboardMeshHandle;
 use crate::text::{BillboardTextBounds, BillboardTextHandles};
 
 pub(self) const BILLBOARD_SHADER_HANDLE: HandleUntyped =
@@ -17,6 +16,10 @@ pub(self) const BILLBOARD_SHADER_HANDLE: HandleUntyped =
 pub struct BillboardUniform {
     pub(crate) transform: Mat4,
 }
+
+#[derive(Clone, Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct BillboardMesh(pub Handle<Mesh>);
 
 #[derive(Clone, Copy, Component, Debug, Reflect)]
 pub struct BillboardDepth(pub bool);
@@ -41,7 +44,7 @@ pub struct BillboardLockAxisBundle<T: Bundle> {
 
 #[derive(Bundle, Default)]
 pub struct BillboardTextureBundle {
-    pub mesh: BillboardMeshHandle,
+    pub mesh: BillboardMesh,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
@@ -65,7 +68,7 @@ pub struct BillboardTextBundle {
 
 pub mod prelude {
     pub use crate::{
-        pipeline::BillboardMeshHandle,
+        pipeline::RenderBillboardMesh,
         plugin::BillboardPlugin,
         text::BillboardTextBounds,
         BillboardTextBundle,
