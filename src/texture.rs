@@ -11,7 +11,7 @@ use crate::{
     pipeline::{RenderBillboardImage, RenderBillboardMesh},
     text::RenderBillboard,
     utils::calculate_billboard_uniform,
-    BillboardDepth, BillboardLockAxis, BillboardMesh, BillboardTexture,
+    BillboardDepth, BillboardLockAxis, BillboardMeshHandle, BillboardTextureHandle,
 };
 
 pub fn extract_billboard_texture(
@@ -23,8 +23,8 @@ pub fn extract_billboard_texture(
             &ViewVisibility,
             &GlobalTransform,
             &Transform,
-            &BillboardMesh,
-            &BillboardTexture,
+            &BillboardMeshHandle,
+            &BillboardTextureHandle,
             &BillboardDepth,
             Option<&BillboardLockAxis>,
         )>,

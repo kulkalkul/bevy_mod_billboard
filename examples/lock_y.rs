@@ -21,8 +21,8 @@ fn setup_billboard(
     commands.spawn(BillboardLockAxisBundle {
         billboard_bundle: BillboardTextureBundle {
             transform: Transform::from_translation(Vec3::new(2.0, 2.0, 0.0)),
-            texture: BillboardTexture(image_handle.clone()),
-            mesh: BillboardMesh(meshes.add(Quad::new(Vec2::new(2., 4.)).into())),
+            texture: BillboardTextureHandle(image_handle.clone()),
+            mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(2., 4.)).into())),
             ..default()
         },
         lock_axis: BillboardLockAxis {
@@ -32,8 +32,8 @@ fn setup_billboard(
     });
     commands.spawn(BillboardTextureBundle {
         transform: Transform::from_translation(Vec3::new(-2.0, 2.0, 0.0)),
-        texture: BillboardTexture(image_handle),
-        mesh: BillboardMesh(meshes.add(Quad::new(Vec2::new(2., 4.)).into())),
+        texture: BillboardTextureHandle(image_handle),
+        mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(2., 4.)).into())),
         ..default()
     });
 }

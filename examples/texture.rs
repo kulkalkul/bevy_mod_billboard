@@ -18,8 +18,8 @@ fn setup_billboard(
 ) {
     let image_handle = asset_server.load("rust-logo-256x256.png");
     commands.spawn(BillboardTextureBundle {
-        texture: BillboardTexture(image_handle),
-        mesh: BillboardMesh(meshes.add(Quad::new(Vec2::new(2., 2.)).into())),
+        texture: BillboardTextureHandle(image_handle),
+        mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(2., 2.)).into())),
         ..default()
     });
 }

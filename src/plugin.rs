@@ -4,7 +4,7 @@ use crate::pipeline::{
 };
 use crate::text::{extract_billboard_text, update_billboard_text_layout};
 use crate::texture::extract_billboard_texture;
-use crate::{BillboardMesh, BillboardTextBounds, BillboardTexture, BILLBOARD_SHADER_HANDLE};
+use crate::{BillboardMeshHandle, BillboardTextBounds, BillboardTextureHandle, BILLBOARD_SHADER_HANDLE};
 use bevy::prelude::*;
 use bevy::render::camera::CameraUpdateSystem;
 use bevy::render::extract_component::UniformComponentPlugin;
@@ -25,8 +25,8 @@ impl Plugin for BillboardPlugin {
         );
 
         app.add_plugins(UniformComponentPlugin::<BillboardUniform>::default())
-            .register_type::<BillboardMesh>()
-            .register_type::<BillboardTexture>()
+            .register_type::<BillboardMeshHandle>()
+            .register_type::<BillboardTextureHandle>()
             .register_type::<BillboardTextBounds>()
             .add_systems(
                 PostUpdate,

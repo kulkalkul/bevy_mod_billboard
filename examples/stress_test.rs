@@ -1,3 +1,5 @@
+
+
 //! Tests the performance of the library
 //! by rendering a large number of billboarded objects at once.
 //!
@@ -39,9 +41,9 @@ struct Settings {
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut meshes: ResMut<Assets<Mesh>>) {
     let image_handle: Handle<Image> = asset_server.load("rust-logo-256x256.png");
-    let billboard_texture = BillboardTexture(image_handle);
+    let billboard_texture = BillboardTextureHandle(image_handle);
     let mesh_handle = meshes.add(Quad::new(Vec2::new(1., 1.)).into());
-    let billboard_mesh = BillboardMesh(mesh_handle);
+    let billboard_mesh = BillboardMeshHandle(mesh_handle);
     let fira_sans_regular_handle = asset_server.load("FiraSans-Regular.ttf");
 
     commands.spawn(Camera3dBundle {
@@ -94,7 +96,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut meshes: Res
 
 fn recompute_billboards(
     mut text_query: Query<&mut Text>,
-    mut billboard_query: Query<&mut BillboardTexture>,
+    mut billboard_query: Query<&mut BillboardTextureHandle>,
     settings: Res<Settings>,
 ) {
     if settings.recompute_text {

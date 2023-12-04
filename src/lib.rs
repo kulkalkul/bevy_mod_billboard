@@ -13,11 +13,11 @@ pub(self) const BILLBOARD_SHADER_HANDLE: Handle<Shader> =
 
 #[derive(Clone, Component, Reflect, Default)]
 #[reflect(Component)]
-pub struct BillboardMesh(pub Handle<Mesh>);
+pub struct BillboardMeshHandle(pub Handle<Mesh>);
 
 #[derive(Clone, Component, Reflect, Default)]
 #[reflect(Component)]
-pub struct BillboardTexture(pub Handle<Image>);
+pub struct BillboardTextureHandle(pub Handle<Image>);
 
 #[derive(Clone, Copy, Component, Debug, Reflect)]
 pub struct BillboardDepth(pub bool);
@@ -42,8 +42,8 @@ pub struct BillboardLockAxisBundle<T: Bundle> {
 
 #[derive(Bundle, Default)]
 pub struct BillboardTextureBundle {
-    pub mesh: BillboardMesh,
-    pub texture: BillboardTexture,
+    pub mesh: BillboardMeshHandle,
+    pub texture: BillboardTextureHandle,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
@@ -68,7 +68,7 @@ pub struct BillboardTextBundle {
 
 pub mod prelude {
     pub use crate::{
-        plugin::BillboardPlugin, text::BillboardTextBounds, BillboardMesh, BillboardTextBundle,
-        BillboardTexture, BillboardTextureBundle,
+        plugin::BillboardPlugin, text::BillboardTextBounds, BillboardMeshHandle, BillboardTextBundle,
+        BillboardTextureHandle, BillboardTextureBundle,
     };
 }
