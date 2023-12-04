@@ -20,11 +20,7 @@ var<uniform> view: View;
 var<uniform> billboard: Billboard;
 
 @group(2) @binding(0)
-#ifdef VERTEX_TEXTURE_ARRAY
-var billboard_texture: texture_2d_array<f32>;
-#else
 var billboard_texture: texture_2d<f32>;
-#endif
 @group(2) @binding(1)
 var billboard_sampler: sampler;
 
@@ -34,18 +30,12 @@ struct Vertex {
 #ifdef VERTEX_COLOR
     @location(2) color: vec4<f32>,
 #endif
-#ifdef VERTEX_TEXTURE_ARRAY
-    @location(3) array_index: i32,
-#endif
 };
 struct VertexOutput {
     @builtin(position) position: vec4<f32>,
     @location(0) uv: vec2<f32>,
 #ifdef VERTEX_COLOR
     @location(1) color: vec4<f32>,
-#endif
-#ifdef VERTEX_TEXTURE_ARRAY
-    @location(2) array_index: i32,
 #endif
 };
 
@@ -72,9 +62,6 @@ fn vertex(vertex: Vertex) -> VertexOutput {
 #ifdef VERTEX_COLOR
     out.color = vertex.color;
 #endif
-#ifdef VERTEX_TEXTURE_ARRAY
-    out.array_index = vertex.array_index;
-#endif
 
     return out;
 }
@@ -84,18 +71,11 @@ struct Fragment {
 #ifdef VERTEX_COLOR
     @location(1) color: vec4<f32>,
 #endif
-#ifdef VERTEX_TEXTURE_ARRAY
-    @location(2) array_index: i32,
-#endif
 };
 
 @fragment
 fn fragment(fragment: Fragment) -> @location(0) vec4<f32> {
-#ifdef VERTEX_TEXTURE_ARRAY
-    let color = textureSample(billboard_texture, billboard_sampler, fragment.uv, fragment.array_index);
-#else
     let color = textureSample(billboard_texture, billboard_sampler, fragment.uv);
-#endif
 #ifdef VERTEX_COLOR
     return color * fragment.color;
 #else

@@ -1,16 +1,16 @@
 use crate::pipeline::{
-    extract_billboard, queue_billboard_bind_group, queue_billboard_texture,
-    queue_billboard_view_bind_groups, ArrayImageCached, BillboardPipeline, BillboardTextPipeline,
-    BillboardTexturePipeline, BillboardUniform, DrawBillboard, BillboardImageBindGroups,
+    queue_billboard_bind_group, queue_billboard_texture,
+    queue_billboard_view_bind_groups, BillboardPipeline,
+    DrawBillboard, BillboardUniform, BillboardImageBindGroups,
 };
-use crate::text::update_billboard_text;
+use crate::text::{extract_billboard_text, update_billboard_text_layout};
+use crate::texture::extract_billboard_texture;
 use crate::{
-    BillboardMeshHandle, BillboardTextBounds, BillboardTexture, BILLBOARD_SHADER_HANDLE,
+    BillboardTextBounds, BILLBOARD_SHADER_HANDLE, BillboardMesh, BillboardTexture,
 };
 use bevy::prelude::*;
 use bevy::render::camera::CameraUpdateSystem;
 use bevy::render::extract_component::UniformComponentPlugin;
-use bevy::render::render_asset::RenderAssetPlugin;
 use bevy::render::render_phase::AddRenderCommand;
 use bevy::render::render_resource::SpecializedMeshPipelines;
 use bevy::render::{RenderApp, RenderSet};
@@ -27,14 +27,14 @@ impl Plugin for BillboardPlugin {
             Shader::from_wgsl
         );
 
-        app.add_asset::<BillboardTexture>()
+        app
             .add_plugins(UniformComponentPlugin::<BillboardUniform>::default())
-            .add_plugins(RenderAssetPlugin::<BillboardTexture>::default())
+            .register_type::<BillboardMesh>()
+            .register_type::<BillboardTexture>()
             .register_type::<BillboardTextBounds>()
-            .register_type::<BillboardMeshHandle>()
             .add_systems(
                 PostUpdate,
-                update_billboard_text.ambiguous_with(CameraUpdateSystem),
+                update_billboard_text_layout.ambiguous_with(CameraUpdateSystem),
             );
     }
 
@@ -42,14 +42,9 @@ impl Plugin for BillboardPlugin {
         app.sub_app_mut(RenderApp)
             .add_render_command::<Transparent3d, DrawBillboard>()
             .init_resource::<BillboardPipeline>()
-            .init_resource::<BillboardTextPipeline>()
-            .init_resource::<BillboardTexturePipeline>()
             .init_resource::<SpecializedMeshPipelines<BillboardPipeline>>()
-            .init_resource::<SpecializedMeshPipelines<BillboardTextPipeline>>()
-            .init_resource::<SpecializedMeshPipelines<BillboardTexturePipeline>>()
             .init_resource::<BillboardImageBindGroups>()
-            .init_resource::<ArrayImageCached>()
-            .add_systems(ExtractSchedule, extract_billboard)
+            .add_systems(ExtractSchedule, (extract_billboard_text, extract_billboard_texture))
             .add_systems(Render, queue_billboard_bind_group.in_set(RenderSet::Queue))
             .add_systems(
                 Render,
