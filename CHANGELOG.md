@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.0] - 2023-12-04
+- Upgrade to Bevy 0.12 (@robftm).
+- Remove texture array implementation.
+- Use 1:N game world -> render world mapping.
+- Remove asset type BillboardTexture.
+- Add BillboardTextureHandle wrapper.
+- Reduce memory usage.
+- Increase performance for most used text case.
+- Add stress_test example (@alice-i-cecile).
+- Add rotating camera to most of the examples to showcase better.
 
 ## [0.4.1] - 2023-08-31
 - Fix missing texture binding flag.

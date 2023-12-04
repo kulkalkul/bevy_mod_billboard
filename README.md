@@ -15,16 +15,11 @@ Billboard text and texture support for bevy
 - Full rotation lock for stuff like 3D world-space text (@robftm)
 - HDR support (@robtfm)
 
-## Limitations
-
-- Uses texture_array for text, according to
-[this](https://github.com/gfx-rs/wgpu/issues/3197), it doesn't work on
-webgl2.
-
 ## Bevy Compatibility
 
 | Bevy Version | Crate Version |
 |--------------|---------------|
+| `0.12`       | `0.5.0`       |
 | `0.11`       | `0.4.1`       |
 | `0.10`       | `0.3.0`       |
 | `0.10`       | `0.2.1`       |
@@ -37,8 +32,7 @@ Setup:
 use bevy_mod_billboard::prelude::*;
 
 App::new()
-    .add_plugins(DefaultPlugins)
-    .add_plugin(BillboardPlugin);
+    .add_plugins((DefaultPlugins, BillboardPlugin));
 ```
 
 Text:
@@ -70,22 +64,28 @@ commands.spawn(BillboardTextBundle {
 
 Texture:
 ```rs
-fn spawn_billboard_texture(
-    mut billboard_textures: ResMut<Assets<BillboardTexture>>,
-    // rest
-) {
-    commands.spawn(BillboardTextureBundle {
-        transform: Transform::from_translation(Vec3::new(0., 5., 0.)),
-        texture: billboard_textures.add(BillboardTexture::Single(image_handle.clone()),
-        mesh: meshes.add(Quad::new(Vec2::new(4.0, 4.0)).into()).into(),
-        ..default()
-    });
-}
+commands.spawn(BillboardTextureBundle {
+    transform: Transform::from_translation(Vec3::new(0., 5., 0.)),
+    texture: BillboardTextureHandle(handle.clone()),
+    mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(4.0, 4.0)).into()).into()),
+    ..default()
+});
 ```
 
 Full examples at [examples](examples).
 
 ## Changelog
+
+### [0.5.0] - 2023-12-04
+- Upgrade to Bevy 0.12 (@robftm).
+- Remove texture array implementation.
+- Use 1:N game world -> render world mapping.
+- Remove asset type BillboardTexture.
+- Add BillboardTextureHandle wrapper.
+- Reduce memory usage.
+- Increase performance for most used text case.
+- Add stress_test example (@alice-i-cecile).
+- Add rotating camera to most of the examples to showcase better.
 
 ### [0.4.1] - 2023-08-31
 - Fix missing texture binding flag.
@@ -93,12 +93,7 @@ Full examples at [examples](examples).
 ### [0.4.0] - 2023-07-24
 - Support HDR.
 - Add rotation locking.
-- Upgrade to Bevy 0.11.
-
-### [0.3.0] - 2023-03-30
-- Add prelude module and replace re-exports with prelude.
-- Add support for disabling depth.
-- Add support for locking Y axis.
+- Upgrade to Bevy 0.11(@robftm).
 
 Full changelog at [CHANGELOG.md](CHANGELOG.md).
 
