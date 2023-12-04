@@ -1,4 +1,4 @@
-use bevy::{ecs::{system::{Commands, Local, Query}, entity::Entity}, render::{Extract, view::ComputedVisibility}, transform::components::{GlobalTransform, Transform}};
+use bevy::{ecs::{system::{Commands, Local, Query}, entity::Entity}, render::{Extract, view::ViewVisibility}, transform::components::{GlobalTransform, Transform}};
 
 use crate::{utils::calculate_billboard_uniform, BillboardDepth, BillboardLockAxis, pipeline::{RenderBillboardMesh, RenderBillboardImage}, text::RenderBillboard, BillboardMesh, BillboardTexture};
 
@@ -8,7 +8,7 @@ pub fn extract_billboard_texture(
     billboard_text_query: Extract<
         Query<(
             Entity,
-            &ComputedVisibility,
+            &ViewVisibility,
             &GlobalTransform,
             &Transform,
             &BillboardMesh,
@@ -30,7 +30,7 @@ pub fn extract_billboard_texture(
         &depth,
         lock_axis,
     ) in &billboard_text_query {
-        if !visibility.is_visible() {
+        if !visibility.get() {
             continue;
         }
 
