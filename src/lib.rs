@@ -5,7 +5,7 @@ pub mod text;
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy::render::mesh::MeshVertexAttribute;
-use bevy::render::render_resource::VertexFormat;
+use bevy::render::render_resource::{VertexFormat, ShaderType};
 use bevy::sprite::Anchor;
 use bevy::text::TextLayoutInfo;
 use crate::pipeline::BillboardMeshHandle;
@@ -16,6 +16,11 @@ pub(self) const BILLBOARD_SHADER_HANDLE: HandleUntyped =
 
 pub(self) const ATTRIBUTE_TEXTURE_ARRAY_INDEX: MeshVertexAttribute =
     MeshVertexAttribute::new("TextureArrayIndex", 584807746, VertexFormat::Sint32);
+
+#[derive(Clone, Copy, ShaderType, Component)]
+pub struct BillboardUniform {
+    pub(crate) transform: Mat4,
+}
 
 #[derive(Clone, Copy, Component, Debug, Reflect)]
 pub struct BillboardDepth(pub bool);
