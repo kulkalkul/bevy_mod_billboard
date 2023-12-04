@@ -144,12 +144,11 @@ pub fn update_billboard_text_layout(
                 }
                 Ok(info) => info,
             };
-
-
-            let length = text_layout_info.glyphs.len();
+            
+            let length = info.glyphs.len();
             let mut atlases = HashMap::new();
 
-            for glyph in &text_layout_info.glyphs {
+            for glyph in &info.glyphs {
                 // TODO: Maybe with clever caching, could be possible to get rid of or_insert_with,
                 // TODO: though I don't know how much of a gain it would be. Just keeping this as a note.
                 let entry = atlases
@@ -169,10 +168,10 @@ pub fn update_billboard_text_layout(
             billboard_text_handles.clear();
 
             for (handle, (glyphs, atlas)) in atlases {
-                let mut positions = Vec::with_capacity(text_layout_info.glyphs.len() * 4);
-                let mut uvs = Vec::with_capacity(text_layout_info.glyphs.len() * 4);
-                let mut colors = Vec::with_capacity(text_layout_info.glyphs.len() * 4);
-                let mut indices = Vec::with_capacity(text_layout_info.glyphs.len() * 6);
+                let mut positions = Vec::with_capacity(info.glyphs.len() * 4);
+                let mut uvs = Vec::with_capacity(info.glyphs.len() * 4);
+                let mut colors = Vec::with_capacity(info.glyphs.len() * 4);
+                let mut indices = Vec::with_capacity(info.glyphs.len() * 6);
 
                 let mut color = Color::WHITE.as_linear_rgba_f32();
                 let mut current_section = usize::MAX;
