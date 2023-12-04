@@ -4,19 +4,18 @@ use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::ecs::query::ROQueryItem;
 use bevy::ecs::system::lifetimeless::{Read, SRes};
 use bevy::ecs::system::{SystemParamItem, SystemState};
-use bevy::prelude::{AssetEvent, Commands, Component, default, Entity, error, FromWorld, Handle, Image, Mat4, Mesh, Msaa, Query, Reflect, Res, ResMut, Resource, Shader, With, World};
-use bevy::render::extract_component::{ComponentUniforms, DynamicUniformIndex};
+use bevy::prelude::{AssetEvent, Commands, Component, default, Entity, error, FromWorld, Handle, Image, Mesh, Msaa, Query, Reflect, Res, ResMut, Resource, Shader, With, World};
+use bevy::render::extract_component::{DynamicUniformIndex, ComponentUniforms};
 use bevy::render::mesh::{GpuBufferInfo, MeshVertexBufferLayout, PrimitiveTopology};
 use bevy::render::render_asset::RenderAssets;
 use bevy::render::render_phase::{DrawFunctions, RenderCommand, RenderCommandResult, RenderPhase, SetItemPipeline, TrackedRenderPass};
 use bevy::render::render_resource::{BindGroup, BindGroupDescriptor, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType, BlendComponent, BlendFactor, BlendOperation, BlendState, BufferBindingType, ColorTargetState, ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState, PipelineCache, PolygonMode, PrimitiveState, RenderPipelineDescriptor, SamplerBindingType, ShaderStages, ShaderType, SpecializedMeshPipeline, SpecializedMeshPipelineError, SpecializedMeshPipelines, TextureFormat, TextureSampleType, TextureViewDimension, VertexState};
 use bevy::render::renderer::RenderDevice;
-use bevy::render::texture::{BevyDefault, GpuImage};
+use bevy::render::texture::BevyDefault;
 use bevy::render::view::{ExtractedView, ViewTarget, ViewUniform, ViewUniformOffset, ViewUniforms, VisibleEntities};
 use bevy::sprite::SpriteAssetEvents;
 use bevy::utils;
-use bevy::utils::HashMap;
-use crate::BILLBOARD_SHADER_HANDLE;
+use crate::{BILLBOARD_SHADER_HANDLE, BillboardUniform};
 use crate::text::ExtractedBillboards;
 
 #[derive(Default, Clone, Component, Debug, Reflect)]
@@ -27,11 +26,6 @@ impl From<Handle<Mesh>> for BillboardMeshHandle {
     fn from(handle: Handle<Mesh>) -> Self {
         Self(handle)
     }
-}
-
-#[derive(Component, Clone, ShaderType)]
-pub struct BillboardUniform {
-    pub(crate) transform: Mat4,
 }
 
 #[derive(Resource)]
@@ -113,9 +107,9 @@ pub fn queue_billboard_bind_group(
     mut commands: Commands,
     render_device: Res<RenderDevice>,
     billboard_pipeline: Res<BillboardPipeline>,
-    billboard_uniforms: Res<ComponentUniforms<BillboardUniform>>,
+    billboard_uniforms_buffer: Res<ComponentUniforms<BillboardUniform>>,
 ) {
-    let Some(binding) = billboard_uniforms.uniforms().binding() else { return; };
+    let Some(binding) = billboard_uniforms_buffer.uniforms().binding() else { return; };
 
     commands.insert_resource(BillboardBindGroup {
         value: render_device.create_bind_group(&BindGroupDescriptor {
@@ -130,7 +124,6 @@ pub fn queue_billboard_bind_group(
 }
 
 pub fn queue_billboard_texture(
-    mut commands: Commands,
     mut views: Query<(
         &ExtractedView,
         &VisibleEntities,
@@ -167,8 +160,8 @@ pub fn queue_billboard_texture(
 
         for visible_entity in &visible_entities.entities {
             let Some(extracted) = extracted_billboards.billboards.get(visible_entity) else { continue; };
-            let Some(gpu_image) = gpu_images.get(&Handle::weak(extracted.texture)) else { continue; };
             let Some(gpu_mesh) = gpu_meshes.get(&Handle::weak(extracted.mesh)) else { continue; };
+            let Some(gpu_image) = gpu_images.get(&Handle::weak(extracted.texture)) else { continue; };
 
             let mut key = BillboardPipelineKey::from_msaa_samples(msaa.samples());
 
@@ -202,10 +195,28 @@ pub fn queue_billboard_texture(
                 }
             };
 
-            textures.try_insert(extracted.texture, gpu_image).ok();
-
             let distance = rangefinder.distance(&extracted.transform);
 
+            image_bind_groups
+                .values
+                .entry(Handle::weak(extracted.texture))
+                .or_insert_with(|| {
+                    render_device.create_bind_group(&BindGroupDescriptor {
+                        label: Some("billboard_texture_bind_group"),
+                        layout: &billboard_pipeline.texture_layout,
+                        entries: &[
+                            BindGroupEntry {
+                                binding: 0,
+                                resource: BindingResource::TextureView(&gpu_image.texture_view),
+                            },
+                            BindGroupEntry {
+                                binding: 1,
+                                resource: BindingResource::Sampler(&gpu_image.sampler),
+                            },
+                        ],
+                    })
+                });
+            
             transparent_phase.add(Transparent3d {
                 pipeline: pipeline_id,
                 entity: *visible_entity,
@@ -213,32 +224,6 @@ pub fn queue_billboard_texture(
                 distance,
             });
         }
-    }
-
-    for (handle_id, gpu_image) in textures {
-        commands.spawn(BillboardRenderTexture {
-            id: handle_id,
-        });
-
-        image_bind_groups
-            .values
-            .entry(Handle::weak(handle_id))
-            .or_insert_with(|| {
-                render_device.create_bind_group(&BindGroupDescriptor {
-                    label: Some("billboard_texture_bind_group"),
-                    layout: &billboard_pipeline.texture_layout,
-                    entries: &[
-                        BindGroupEntry {
-                            binding: 0,
-                            resource: BindingResource::TextureView(&gpu_image.texture_view),
-                        },
-                        BindGroupEntry {
-                            binding: 1,
-                            resource: BindingResource::Sampler(&gpu_image.sampler),
-                        },
-                    ],
-                })
-            });
     }
 }
 

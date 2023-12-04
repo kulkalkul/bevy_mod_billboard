@@ -1,11 +1,11 @@
 use crate::pipeline::{
     queue_billboard_bind_group, queue_billboard_texture,
     queue_billboard_view_bind_groups, BillboardPipeline,
-    BillboardUniform, DrawBillboard, BillboardImageBindGroups,
+    DrawBillboard, BillboardImageBindGroups,
 };
 use crate::text::{extract_billboard_text, update_billboard_text_layout, ExtractedBillboards};
 use crate::{
-    BillboardMeshHandle, BillboardTextBounds, BILLBOARD_SHADER_HANDLE,
+    BillboardMeshHandle, BillboardTextBounds, BILLBOARD_SHADER_HANDLE, BillboardUniform,
 };
 use bevy::prelude::*;
 use bevy::render::camera::CameraUpdateSystem;

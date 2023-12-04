@@ -9,8 +9,7 @@ use bevy::text::{
 };
 use bevy::utils::{hashbrown, HashMap, HashSet, PassHash};
 use smallvec::SmallVec;
-use crate::{BillboardDepth, BillboardLockAxis};
-use crate::pipeline::BillboardUniform;
+use crate::{BillboardDepth, BillboardLockAxis, BillboardUniform};
 
 // Uses this as reference
 // https://github.com/bevyengine/bevy/blob/v0.11.2/crates/bevy_text/src/text2d.rs
@@ -30,8 +29,7 @@ pub struct BillboardTextHandleGroup {
 }
 
 pub fn extract_billboard_text(
-    mut commands: Commands,
-    mut extracted_billboard_fonts: ResMut<ExtractedBillboards>,
+    mut extracted_billboards: ResMut<ExtractedBillboards>,
     billboard_text_query: Extract<
         Query<(
             Entity,
@@ -45,9 +43,7 @@ pub fn extract_billboard_text(
         )>,
     >,
 ) {
-    extracted_billboard_fonts.billboards.clear();
-
-    let mut entities = Vec::new();
+    extracted_billboards.billboards.clear();
 
     for (
         entity,
@@ -66,21 +62,21 @@ pub fn extract_billboard_text(
         let text_anchor = -(anchor.as_vec() + 0.5);
         let alignment_translation = info.size * text_anchor;
 
-        let matrix = transform.compute_matrix();
+        let transform = transform.compute_matrix();
+        let billboard_uniform = BillboardUniform { transform };
 
         for handle_group in handles.iter() {
-            extracted_billboard_fonts.billboards.insert(entity, ExtractedBillboardText {
-                transform: matrix,
+            extracted_billboards.billboards.insert(entity, ExtractedBillboardText {
                 alignment_translation,
                 mesh: handle_group.mesh.id(),
                 texture: handle_group.atlas.id(),
                 depth,
                 lock_axis: lock_axis.copied(),
+                transform,
+                billboard_uniform,
             });
         }
-        entities.push((entity, BillboardUniform { transform: matrix }));
     }
-    commands.insert_or_spawn_batch(entities);
 }
 
 pub fn update_billboard_text_layout(
@@ -252,4 +248,5 @@ pub struct ExtractedBillboardText {
     pub depth: BillboardDepth,
     pub lock_axis: Option<BillboardLockAxis>,
     pub transform: Mat4,
+    pub billboard_uniform: BillboardUniform,
 }
