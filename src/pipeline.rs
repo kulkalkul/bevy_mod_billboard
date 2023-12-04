@@ -129,25 +129,6 @@ pub fn queue_billboard_bind_group(
     });
 }
 
-#[derive(Hash, PartialEq, Eq)]
-struct BatchGroupKey {
-    handle_id: HandleId,
-    pipeline_key: BillboardPipelineKey,
-    pipeline_id: CachedRenderPipelineId,
-}
-
-struct BatchGroup {
-    items: Vec<BatchGroupItem>,
-}
-
-struct BatchGroupItem {
-    transform: Mat4,
-}
-
-struct BillboardBatch {
-    gpu_image: GpuImage,
-}
-
 pub fn queue_billboard_texture(
     mut commands: Commands,
     mut views: Query<(
@@ -177,8 +158,6 @@ pub fn queue_billboard_texture(
     }
 
     for (view, visible_entities, mut transparent_phase) in &mut views {
-        let mut batch_groups = HashMap::<BatchGroupKey, BatchGroup>::new();
-
         let draw_transparent_billboard = transparent_draw_functions
             .read()
             .get_id::<DrawBillboard>()
