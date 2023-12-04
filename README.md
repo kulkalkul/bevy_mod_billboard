@@ -91,8 +91,8 @@ Full examples at [examples](examples).
 - Fix missing texture binding flag.
 
 ### [0.4.0] - 2023-07-24
-- Support HDR.
-- Add rotation locking.
+- Support HDR(@robftm).
+- Add rotation locking(@robftm).
 - Upgrade to Bevy 0.11(@robftm).
 
 Full changelog at [CHANGELOG.md](CHANGELOG.md).
