@@ -5,12 +5,15 @@ Billboard text and texture support for bevy
 
 ## Todo
 - Follow Rust API Guidelines: https://rust-lang.github.io/api-guidelines/about.html
+- Batching
 
 ## Features
 - Styled text with multiple fonts.
 - Textures.
 - Depth culling enabling/disabling (enabled by default).
 - Y-axis locking (disabled by default).
+- Full rotation lock for stuff like 3D world-space text (@robftm)
+- HDR support (@robtfm)
 
 ## Limitations
 
@@ -22,6 +25,7 @@ webgl2.
 
 | Bevy Version | Crate Version |
 |--------------|---------------|
+| `0.11`       | `0.4.1`       |
 | `0.10`       | `0.3.0`       |
 | `0.10`       | `0.2.1`       |
 | `0.9`        | `0.1.1`       |
@@ -83,13 +87,18 @@ Full examples at [examples](examples).
 
 ## Changelog
 
+### [0.4.1] - 2023-08-31
+- Fix missing texture binding flag.
+
+### [0.4.0] - 2023-07-24
+- Support HDR.
+- Add rotation locking.
+- Upgrade to Bevy 0.11.
+
 ### [0.3.0] - 2023-03-30
 - Add prelude module and replace re-exports with prelude.
 - Add support for disabling depth.
 - Add support for locking Y axis.
-
-### [0.2.1] - 2023-03-29
-- Fix memory leak caused by ImageBindGroup
 
 Full changelog at [CHANGELOG.md](CHANGELOG.md).
 

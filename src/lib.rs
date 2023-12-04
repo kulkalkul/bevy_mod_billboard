@@ -1,20 +1,24 @@
 pub mod pipeline;
 pub mod plugin;
 pub mod text;
+pub mod texture;
+mod utils;
 
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
-use bevy::render::mesh::MeshVertexAttribute;
-use bevy::render::render_resource::VertexFormat;
 use bevy::sprite::Anchor;
-use crate::pipeline::{BillboardMeshHandle, BillboardTexture};
-use crate::text::BillboardTextBounds;
+use crate::text::{BillboardTextBounds, BillboardTextHandles};
 
 pub(self) const BILLBOARD_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 12823766040132746076);
 
-pub(self) const ATTRIBUTE_TEXTURE_ARRAY_INDEX: MeshVertexAttribute =
-    MeshVertexAttribute::new("TextureArrayIndex", 584807746, VertexFormat::Sint32);
+#[derive(Clone, Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct BillboardMesh(pub Handle<Mesh>);
+
+#[derive(Clone, Component, Reflect, Default)]
+#[reflect(Component)]
+pub struct BillboardTexture(pub Handle<Image>);
 
 #[derive(Clone, Copy, Component, Debug, Reflect)]
 pub struct BillboardDepth(pub bool);
@@ -26,19 +30,21 @@ impl Default for BillboardDepth {
 }
 
 #[derive(Default, Clone, Copy, Component, Debug, Reflect)]
-pub struct BillboardLockAxisY;
+pub struct BillboardLockAxis {
+    pub y_axis: bool,
+    pub rotation: bool,
+}
 
 #[derive(Bundle, Default)]
 pub struct BillboardLockAxisBundle<T: Bundle> {
-    #[bundle]
     pub billboard_bundle: T,
-    pub lock_axis_y: BillboardLockAxisY,
+    pub lock_axis: BillboardLockAxis,
 }
 
 #[derive(Bundle, Default)]
 pub struct BillboardTextureBundle {
-    pub texture: Handle<BillboardTexture>,
-    pub mesh: BillboardMeshHandle,
+    pub mesh: BillboardMesh,
+    pub texture: BillboardTexture,
     pub transform: Transform,
     pub global_transform: GlobalTransform,
     pub visibility: Visibility,
@@ -56,14 +62,16 @@ pub struct BillboardTextBundle {
     pub visibility: Visibility,
     pub computed_visibility: ComputedVisibility,
     pub billboard_depth: BillboardDepth,
+    pub billboard_text_handles: BillboardTextHandles,
 }
 
 pub mod prelude {
     pub use crate::{
-        pipeline::{BillboardMeshHandle, BillboardTexture},
-        plugin::BillboardPlugin,
-        text::BillboardTextBounds,
+        BillboardTexture,
+        BillboardMesh,
         BillboardTextBundle,
         BillboardTextureBundle,
+        plugin::BillboardPlugin,
+        text::BillboardTextBounds,
     };
 }

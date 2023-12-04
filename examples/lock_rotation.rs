@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_mod_billboard::BillboardDepth;
+use bevy_mod_billboard::BillboardLockAxis;
 use bevy_mod_billboard::prelude::*;
 
 fn main() {
@@ -11,34 +11,38 @@ fn main() {
         .run();
 }
 
-const TEXT_SCALE: Vec3 = Vec3::splat(0.0085);
-
-fn setup_billboard(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-) {
+fn setup_billboard(mut commands: Commands, asset_server: Res<AssetServer>) {
     let fira_sans_regular_handle = asset_server.load("FiraSans-Regular.ttf");
-
-    commands.spawn(BillboardTextBundle {
-        transform: Transform::from_translation(Vec3::new(0., 0.5, 0.)).with_scale(TEXT_SCALE),
-        text: Text::from_section("depth enabled", TextStyle {
-            font_size: 60.0,
-            font: fira_sans_regular_handle.clone(),
-            color: Color::WHITE,
-        }).with_alignment(TextAlignment::Center),
-        ..default()
-    });
-
-    commands.spawn(BillboardTextBundle {
-        transform: Transform::from_translation(Vec3::new(0., -0.5, 0.)).with_scale(TEXT_SCALE),
-        text: Text::from_section("depth disabled", TextStyle {
-            font_size: 60.0,
-            font: fira_sans_regular_handle.clone(),
-            color: Color::WHITE,
-        }).with_alignment(TextAlignment::Center),
-        billboard_depth: BillboardDepth(false),
-        ..default()
-    });
+    commands
+    .spawn((
+        BillboardTextBundle {
+            transform: Transform::from_scale(Vec3::splat(0.0085))
+                .looking_at(Vec3::splat(5.0), Vec3::Y),
+            text: Text::from_sections([
+                TextSection {
+                    value: "LOCKED".to_string(),
+                    style: TextStyle {
+                        font_size: 60.0,
+                        font: fira_sans_regular_handle.clone(),
+                        color: Color::ORANGE,
+                    }
+                },
+                TextSection {
+                    value: " text".to_string(),
+                    style: TextStyle {
+                        font_size: 60.0,
+                        font: fira_sans_regular_handle.clone(),
+                        color: Color::WHITE,
+                    }
+                }
+            ]).with_alignment(TextAlignment::Center),
+            ..default()
+        },
+        BillboardLockAxis {
+            rotation: true,
+            ..default()
+        }
+    ));
 }
 
 // Important bits are above, the code below is for camera, reference cube and rotation
@@ -65,8 +69,8 @@ fn setup_scene(
 
     commands.spawn(PbrBundle {
         mesh: meshes.add(shape::Cube::default().into()),
-        material: materials.add(Color::BEIGE.into()),
-        transform: Transform::from_translation(Vec3::new(1., 0., 0.)),
+        material: materials.add(Color::GRAY.into()),
+        transform: Transform::from_translation(Vec3::NEG_Y),
         ..default()
     });
 }

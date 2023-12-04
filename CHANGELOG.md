@@ -1,5 +1,14 @@
 # Changelog
 
+
+## [0.4.1] - 2023-08-31
+- Fix missing texture binding flag.
+
+## [0.4.0] - 2023-07-24
+- Support HDR.
+- Add rotation locking.
+- Upgrade to Bevy 0.11.
+
 ## [0.3.0] - 2023-03-30
 - Add prelude module and replace re-exports with prelude.
 - Add support for disabling depth.
