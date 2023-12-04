@@ -4,8 +4,7 @@ pub mod text;
 
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
-use bevy::render::mesh::MeshVertexAttribute;
-use bevy::render::render_resource::{VertexFormat, ShaderType};
+use bevy::render::render_resource::ShaderType;
 use bevy::sprite::Anchor;
 use bevy::text::TextLayoutInfo;
 use crate::pipeline::BillboardMeshHandle;
@@ -13,9 +12,6 @@ use crate::text::{BillboardTextBounds, BillboardTextHandles};
 
 pub(self) const BILLBOARD_SHADER_HANDLE: HandleUntyped =
     HandleUntyped::weak_from_u64(Shader::TYPE_UUID, 12823766040132746076);
-
-pub(self) const ATTRIBUTE_TEXTURE_ARRAY_INDEX: MeshVertexAttribute =
-    MeshVertexAttribute::new("TextureArrayIndex", 584807746, VertexFormat::Sint32);
 
 #[derive(Clone, Copy, ShaderType, Component)]
 pub struct BillboardUniform {
