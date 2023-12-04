@@ -4,11 +4,12 @@ pub mod text;
 pub mod texture;
 mod utils;
 
+use crate::text::{BillboardTextBounds, BillboardTextHandles};
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
-use crate::text::{BillboardTextBounds, BillboardTextHandles};
 
-pub(self) const BILLBOARD_SHADER_HANDLE: Handle<Shader> = Handle::weak_from_u128(12823766040132746076);
+pub(self) const BILLBOARD_SHADER_HANDLE: Handle<Shader> =
+    Handle::weak_from_u128(12823766040132746076);
 
 #[derive(Clone, Component, Reflect, Default)]
 #[reflect(Component)]
@@ -67,11 +68,7 @@ pub struct BillboardTextBundle {
 
 pub mod prelude {
     pub use crate::{
-        BillboardTexture,
-        BillboardMesh,
-        BillboardTextBundle,
-        BillboardTextureBundle,
-        plugin::BillboardPlugin,
-        text::BillboardTextBounds,
+        plugin::BillboardPlugin, text::BillboardTextBounds, BillboardMesh, BillboardTextBundle,
+        BillboardTexture, BillboardTextureBundle,
     };
 }

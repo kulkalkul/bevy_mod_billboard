@@ -1,16 +1,16 @@
+use crate::pipeline::{RenderBillboardImage, RenderBillboardMesh};
+use crate::utils::calculate_billboard_uniform;
+use crate::{BillboardDepth, BillboardLockAxis};
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::Extract;
 use bevy::sprite::Anchor;
 use bevy::text::{
-    BreakLineOn, FontAtlasWarning, PositionedGlyph, Text2dBounds,
-    TextPipeline, TextSettings, YAxisOrientation, FontAtlasSets,
+    BreakLineOn, FontAtlasSets, FontAtlasWarning, PositionedGlyph, Text2dBounds, TextPipeline,
+    TextSettings, YAxisOrientation,
 };
 use bevy::utils::{HashMap, HashSet};
 use smallvec::SmallVec;
-use crate::pipeline::{RenderBillboardImage, RenderBillboardMesh};
-use crate::utils::calculate_billboard_uniform;
-use crate::{BillboardDepth, BillboardLockAxis};
 
 // Uses this as reference
 // https://github.com/bevyengine/bevy/blob/v0.11.2/crates/bevy_text/src/text2d.rs
@@ -46,15 +46,9 @@ pub fn extract_billboard_text(
 ) {
     let mut batch = Vec::with_capacity(*previous_len);
 
-    for (
-        entity,
-        visibility,
-        global_transform,
-        transform,
-        handles,
-        &depth,
-        lock_axis,
-    ) in &billboard_text_query {
+    for (entity, visibility, global_transform, transform, handles, &depth, lock_axis) in
+        &billboard_text_query
+    {
         if !visibility.get() {
             continue;
         }
@@ -66,13 +60,17 @@ pub fn extract_billboard_text(
                 entity,
                 (
                     uniform,
-                    RenderBillboardMesh { id: handle_group.mesh.id() },
-                    RenderBillboardImage { id: handle_group.image.id() },
+                    RenderBillboardMesh {
+                        id: handle_group.mesh.id(),
+                    },
+                    RenderBillboardImage {
+                        id: handle_group.image.id(),
+                    },
                     RenderBillboard {
                         depth,
                         lock_axis: lock_axis.copied(),
                     },
-                )
+                ),
             ));
         }
     }
@@ -101,14 +99,9 @@ pub fn update_billboard_text_layout(
 ) {
     const SCALE_FACTOR: f64 = 1.0;
 
-    for (
-        entity,
-        text,
-        bounds,
-        anchor,
-        mut billboard_text_handles,
-    ) in &mut text_query {
-        if text.is_changed() || bounds.is_changed() || anchor.is_changed() || queue.remove(&entity) {
+    for (entity, text, bounds, anchor, mut billboard_text_handles) in &mut text_query {
+        if text.is_changed() || bounds.is_changed() || anchor.is_changed() || queue.remove(&entity)
+        {
             let text_bounds = Vec2::new(
                 if text.linebreak_behavior == BreakLineOn::NoWrap {
                     f32::INFINITY
@@ -145,7 +138,7 @@ pub fn update_billboard_text_layout(
 
             let text_anchor = -(anchor.as_vec() + 0.5);
             let alignment_translation = info.logical_size * text_anchor;
-            
+
             let length = info.glyphs.len();
             let mut atlases = HashMap::new();
 
@@ -187,7 +180,7 @@ pub fn update_billboard_text_layout(
                 {
                     let index = positions.len() as u32;
                     let position = position + alignment_translation;
-                    
+
                     let half_size = size / 2.0;
                     let top_left = position - half_size;
                     let bottom_right = position + half_size;

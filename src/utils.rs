@@ -1,4 +1,7 @@
-use bevy::{transform::components::{Transform, GlobalTransform}, math::{Mat4, Vec4}};
+use bevy::{
+    math::{Mat4, Vec4},
+    transform::components::{GlobalTransform, Transform},
+};
 
 use crate::{pipeline::BillboardUniform, BillboardLockAxis};
 

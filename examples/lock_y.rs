@@ -1,7 +1,7 @@
-use bevy::prelude::*;
 use bevy::prelude::shape::{Plane, Quad};
-use bevy_mod_billboard::{BillboardLockAxisBundle, BillboardLockAxis};
+use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
+use bevy_mod_billboard::{BillboardLockAxis, BillboardLockAxisBundle};
 
 fn main() {
     App::new()
@@ -18,26 +18,24 @@ fn setup_billboard(
     mut meshes: ResMut<Assets<Mesh>>,
 ) {
     let image_handle = asset_server.load("tree.png");
-    commands
-        .spawn(BillboardLockAxisBundle {
-            billboard_bundle: BillboardTextureBundle {
-                transform: Transform::from_translation(Vec3::new(2.0, 2.0, 0.0)),
-                texture: BillboardTexture(image_handle.clone()),
-                mesh: BillboardMesh(meshes.add(Quad::new(Vec2::new(2., 4.)).into())),
-                ..default()
-            },
-            lock_axis: BillboardLockAxis {
-                y_axis: true,
-                ..Default::default()
-            },
-        });
-    commands
-        .spawn(BillboardTextureBundle {
-            transform: Transform::from_translation(Vec3::new(-2.0, 2.0, 0.0)),
-            texture: BillboardTexture(image_handle),
+    commands.spawn(BillboardLockAxisBundle {
+        billboard_bundle: BillboardTextureBundle {
+            transform: Transform::from_translation(Vec3::new(2.0, 2.0, 0.0)),
+            texture: BillboardTexture(image_handle.clone()),
             mesh: BillboardMesh(meshes.add(Quad::new(Vec2::new(2., 4.)).into())),
             ..default()
-        });
+        },
+        lock_axis: BillboardLockAxis {
+            y_axis: true,
+            ..Default::default()
+        },
+    });
+    commands.spawn(BillboardTextureBundle {
+        transform: Transform::from_translation(Vec3::new(-2.0, 2.0, 0.0)),
+        texture: BillboardTexture(image_handle),
+        mesh: BillboardMesh(meshes.add(Quad::new(Vec2::new(2., 4.)).into())),
+        ..default()
+    });
 }
 
 // Important bits are above, the code below is for camera, reference plane and rotation
@@ -51,28 +49,29 @@ fn setup_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Plane { size: 4.0, subdivisions: 0 }.into()),
+        mesh: meshes.add(
+            Plane {
+                size: 4.0,
+                subdivisions: 0,
+            }
+            .into(),
+        ),
         material: materials.add(Color::SILVER.into()),
         ..default()
     });
 
-    commands.spawn((
-        CameraHolder,
-        Transform::IDENTITY,
-        GlobalTransform::IDENTITY,
-    )).with_children(|parent| {
-        parent.spawn(Camera3dBundle {
-            transform: Transform::from_translation(Vec3::new(0., 15., 2.))
-                .looking_at(Vec3::ZERO, Vec3::Y),
-            ..default()
+    commands
+        .spawn((CameraHolder, Transform::IDENTITY, GlobalTransform::IDENTITY))
+        .with_children(|parent| {
+            parent.spawn(Camera3dBundle {
+                transform: Transform::from_translation(Vec3::new(0., 15., 2.))
+                    .looking_at(Vec3::ZERO, Vec3::Y),
+                ..default()
+            });
         });
-    });
 }
 
-fn rotate_camera(
-    mut camera: Query<&mut Transform, With<CameraHolder>>,
-    time: Res<Time>,
-) {
+fn rotate_camera(mut camera: Query<&mut Transform, With<CameraHolder>>, time: Res<Time>) {
     let mut camera = camera.single_mut();
 
     camera.rotate_y(time.delta_seconds());

@@ -15,20 +15,16 @@ fn text_binding_compatible_with_ui() {
 
         commands.spawn(Camera3dBundle::default());
 
-        commands
-            .spawn(BillboardTextBundle {
-                text: Text::from_section("a", style.clone()),
-                ..default()
-            });
+        commands.spawn(BillboardTextBundle {
+            text: Text::from_section("a", style.clone()),
+            ..default()
+        });
 
         commands.spawn(TextBundle::from_section("b", style));
     }
 
     App::new()
-        .add_plugins((
-            DefaultPlugins,
-            BillboardPlugin,
-        ))
+        .add_plugins((DefaultPlugins, BillboardPlugin))
         .add_systems(Startup, setup_scene)
         .run();
 }

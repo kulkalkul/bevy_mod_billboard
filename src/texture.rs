@@ -1,6 +1,18 @@
-use bevy::{ecs::{system::{Commands, Local, Query}, entity::Entity}, render::{Extract, view::ViewVisibility}, transform::components::{GlobalTransform, Transform}};
+use bevy::{
+    ecs::{
+        entity::Entity,
+        system::{Commands, Local, Query},
+    },
+    render::{view::ViewVisibility, Extract},
+    transform::components::{GlobalTransform, Transform},
+};
 
-use crate::{utils::calculate_billboard_uniform, BillboardDepth, BillboardLockAxis, pipeline::{RenderBillboardMesh, RenderBillboardImage}, text::RenderBillboard, BillboardMesh, BillboardTexture};
+use crate::{
+    pipeline::{RenderBillboardImage, RenderBillboardMesh},
+    text::RenderBillboard,
+    utils::calculate_billboard_uniform,
+    BillboardDepth, BillboardLockAxis, BillboardMesh, BillboardTexture,
+};
 
 pub fn extract_billboard_texture(
     mut commands: Commands,
@@ -29,7 +41,8 @@ pub fn extract_billboard_texture(
         billboard_texture,
         &depth,
         lock_axis,
-    ) in &billboard_text_query {
+    ) in &billboard_text_query
+    {
         if !visibility.get() {
             continue;
         }
@@ -40,13 +53,17 @@ pub fn extract_billboard_texture(
             entity,
             (
                 uniform,
-                RenderBillboardMesh { id: billboard_mesh.0.id() },
-                RenderBillboardImage { id: billboard_texture.0.id() },
+                RenderBillboardMesh {
+                    id: billboard_mesh.0.id(),
+                },
+                RenderBillboardImage {
+                    id: billboard_texture.0.id(),
+                },
                 RenderBillboard {
                     depth,
                     lock_axis: lock_axis.copied(),
-                }
-            )
+                },
+            ),
         ));
     }
 

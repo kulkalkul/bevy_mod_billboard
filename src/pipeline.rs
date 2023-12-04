@@ -1,3 +1,5 @@
+use crate::text::RenderBillboard;
+use crate::BILLBOARD_SHADER_HANDLE;
 use bevy::asset::AssetId;
 use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::ecs::query::ROQueryItem;
@@ -5,19 +7,33 @@ use bevy::ecs::system::lifetimeless::{Read, SRes};
 use bevy::ecs::system::{SystemParamItem, SystemState};
 use bevy::log::error;
 use bevy::math::Mat4;
-use bevy::prelude::{AssetEvent, Commands, Component, default, Entity, FromWorld, Image, Mesh, Msaa, Query, Res, ResMut, Resource, With, World};
-use bevy::render::extract_component::{DynamicUniformIndex, ComponentUniforms};
+use bevy::prelude::{
+    default, AssetEvent, Commands, Component, Entity, FromWorld, Image, Mesh, Msaa, Query, Res,
+    ResMut, Resource, With, World,
+};
+use bevy::render::extract_component::{ComponentUniforms, DynamicUniformIndex};
 use bevy::render::mesh::{GpuBufferInfo, MeshVertexBufferLayout, PrimitiveTopology};
 use bevy::render::render_asset::RenderAssets;
-use bevy::render::render_phase::{DrawFunctions, RenderCommand, RenderCommandResult, RenderPhase, SetItemPipeline, TrackedRenderPass};
-use bevy::render::render_resource::{BindGroup, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry, BindingResource, BindingType, BlendComponent, BlendFactor, BlendOperation, BlendState, BufferBindingType, ColorTargetState, ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState, PipelineCache, PolygonMode, PrimitiveState, RenderPipelineDescriptor, SamplerBindingType, ShaderStages, ShaderType, SpecializedMeshPipeline, SpecializedMeshPipelineError, SpecializedMeshPipelines, TextureFormat, TextureSampleType, TextureViewDimension, VertexState};
+use bevy::render::render_phase::{
+    DrawFunctions, RenderCommand, RenderCommandResult, RenderPhase, SetItemPipeline,
+    TrackedRenderPass,
+};
+use bevy::render::render_resource::{
+    BindGroup, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
+    BindingResource, BindingType, BlendComponent, BlendFactor, BlendOperation, BlendState,
+    BufferBindingType, ColorTargetState, ColorWrites, CompareFunction, DepthStencilState,
+    FragmentState, FrontFace, MultisampleState, PipelineCache, PolygonMode, PrimitiveState,
+    RenderPipelineDescriptor, SamplerBindingType, ShaderStages, ShaderType,
+    SpecializedMeshPipeline, SpecializedMeshPipelineError, SpecializedMeshPipelines, TextureFormat,
+    TextureSampleType, TextureViewDimension, VertexState,
+};
 use bevy::render::renderer::RenderDevice;
 use bevy::render::texture::BevyDefault;
-use bevy::render::view::{ExtractedView, ViewTarget, ViewUniform, ViewUniformOffset, ViewUniforms, VisibleEntities};
+use bevy::render::view::{
+    ExtractedView, ViewTarget, ViewUniform, ViewUniformOffset, ViewUniforms, VisibleEntities,
+};
 use bevy::sprite::SpriteAssetEvents;
 use bevy::utils;
-use crate::text::RenderBillboard;
-use crate::BILLBOARD_SHADER_HANDLE;
 
 #[derive(Clone, Copy, ShaderType, Component)]
 pub struct BillboardUniform {
@@ -88,7 +104,9 @@ pub fn prepare_billboard_view_bind_groups(
     view_uniforms: Res<ViewUniforms>,
     views: Query<Entity, With<ExtractedView>>,
 ) {
-    let Some(binding) = view_uniforms.uniforms.binding() else { return; };
+    let Some(binding) = view_uniforms.uniforms.binding() else {
+        return;
+    };
 
     for entity in views.iter() {
         commands.entity(entity).insert(BillboardViewBindGroup {
@@ -110,7 +128,9 @@ pub fn prepare_billboard_bind_group(
     billboard_pipeline: Res<BillboardPipeline>,
     billboard_uniforms_buffer: Res<ComponentUniforms<BillboardUniform>>,
 ) {
-    let Some(binding) = billboard_uniforms_buffer.uniforms().binding() else { return; };
+    let Some(binding) = billboard_uniforms_buffer.uniforms().binding() else {
+        return;
+    };
 
     commands.insert_resource(BillboardBindGroup {
         value: render_device.create_bind_group(
@@ -165,14 +185,15 @@ pub fn queue_billboard_texture(
         let rangefinder = view.rangefinder3d();
 
         for visible_entity in &visible_entities.entities {
-            let Ok((
-                uniform,
-                mesh,
-                image,
-                billboard,
-            )) = billboards.get(*visible_entity) else { continue; };
-            let Some(gpu_image) = gpu_images.get(image.id) else { continue; };
-            let Some(gpu_mesh) = gpu_meshes.get(mesh.id) else { continue; };
+            let Ok((uniform, mesh, image, billboard)) = billboards.get(*visible_entity) else {
+                continue;
+            };
+            let Some(gpu_image) = gpu_images.get(image.id) else {
+                continue;
+            };
+            let Some(gpu_mesh) = gpu_meshes.get(mesh.id) else {
+                continue;
+            };
 
             let mut key = BillboardPipelineKey::from_msaa_samples(msaa.samples());
 
@@ -208,26 +229,23 @@ pub fn queue_billboard_texture(
 
             let distance = rangefinder.distance(&uniform.transform);
 
-            image_bind_groups
-                .values
-                .entry(image.id)
-                .or_insert_with(|| {
-                    render_device.create_bind_group(
-                        Some("billboard_texture_bind_group"),
-                        &billboard_pipeline.texture_layout,
-                        &[
-                            BindGroupEntry {
-                                binding: 0,
-                                resource: BindingResource::TextureView(&gpu_image.texture_view),
-                            },
-                            BindGroupEntry {
-                                binding: 1,
-                                resource: BindingResource::Sampler(&gpu_image.sampler),
-                            },
-                        ],
-                    )
-                });
-            
+            image_bind_groups.values.entry(image.id).or_insert_with(|| {
+                render_device.create_bind_group(
+                    Some("billboard_texture_bind_group"),
+                    &billboard_pipeline.texture_layout,
+                    &[
+                        BindGroupEntry {
+                            binding: 0,
+                            resource: BindingResource::TextureView(&gpu_image.texture_view),
+                        },
+                        BindGroupEntry {
+                            binding: 1,
+                            resource: BindingResource::Sampler(&gpu_image.sampler),
+                        },
+                    ],
+                )
+            });
+
             transparent_phase.add(Transparent3d {
                 pipeline: pipeline_id,
                 entity: *visible_entity,
@@ -367,10 +385,11 @@ impl SpecializedMeshPipeline for BillboardPipeline {
                 entry_point: "fragment".into(),
                 shader_defs,
                 targets: vec![Some(ColorTargetState {
-                    format: if key.contains(BillboardPipelineKey::HDR)
-                    { ViewTarget::TEXTURE_FORMAT_HDR }
-                    else
-                    { TextureFormat::bevy_default() },
+                    format: if key.contains(BillboardPipelineKey::HDR) {
+                        ViewTarget::TEXTURE_FORMAT_HDR
+                    } else {
+                        TextureFormat::bevy_default()
+                    },
                     blend: Some(BlendState {
                         color: BlendComponent {
                             src_factor: BlendFactor::SrcAlpha,
@@ -467,7 +486,11 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardTextureBindGro
         images: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        let bind_group = images.into_inner().values.get(&billboard_texture.id).unwrap();
+        let bind_group = images
+            .into_inner()
+            .values
+            .get(&billboard_texture.id)
+            .unwrap();
 
         pass.set_bind_group(I, bind_group, &[]);
 

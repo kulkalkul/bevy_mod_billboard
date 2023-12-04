@@ -37,11 +37,7 @@ struct Settings {
     recompute_texture: bool,
 }
 
-fn setup(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-) {
+fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut meshes: ResMut<Assets<Mesh>>) {
     let image_handle: Handle<Image> = asset_server.load("rust-logo-256x256.png");
     let billboard_texture = BillboardTexture(image_handle);
     let mesh_handle = meshes.add(Quad::new(Vec2::new(1., 1.)).into());
