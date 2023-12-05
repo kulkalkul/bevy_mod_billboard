@@ -16,11 +16,22 @@ exclude = [ "images", "assets" ]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.12", default-features = false, features = [
-    "bevy_core_pipeline", "bevy_render", "bevy_asset", "bevy_text", "bevy_sprite", "bevy_winit"
-] }
 smallvec = "1.11.0"
 bitflags = "2.3"
+
+[dependencies.bevy]
+version = "0.12"
+default_features = false
+features = [
+    "bevy_core_pipeline",
+    "bevy_render",
+    "bevy_asset",
+    "bevy_text",
+    "bevy_sprite",
+    "bevy_winit",
+    "x11",
+    "wayland",
+]
 
 [dev-dependencies]
 bevy = "0.12.1"
