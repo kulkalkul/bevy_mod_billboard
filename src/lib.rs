@@ -68,7 +68,7 @@ pub struct BillboardTextBundle {
 
 pub mod prelude {
     pub use crate::{
-        plugin::BillboardPlugin, text::BillboardTextBounds, BillboardMeshHandle, BillboardTextBundle,
-        BillboardTextureHandle, BillboardTextureBundle,
+        plugin::BillboardPlugin, text::BillboardTextBounds, BillboardMeshHandle,
+        BillboardTextBundle, BillboardTextureBundle, BillboardTextureHandle,
     };
 }

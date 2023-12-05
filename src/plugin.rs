@@ -4,7 +4,9 @@ use crate::pipeline::{
 };
 use crate::text::{extract_billboard_text, update_billboard_text_layout};
 use crate::texture::extract_billboard_texture;
-use crate::{BillboardMeshHandle, BillboardTextBounds, BillboardTextureHandle, BILLBOARD_SHADER_HANDLE};
+use crate::{
+    BillboardMeshHandle, BillboardTextBounds, BillboardTextureHandle, BILLBOARD_SHADER_HANDLE,
+};
 use bevy::prelude::*;
 use bevy::render::camera::CameraUpdateSystem;
 use bevy::render::extract_component::UniformComponentPlugin;

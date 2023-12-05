@@ -1,5 +1,3 @@
-
-
 //! Tests the performance of the library
 //! by rendering a large number of billboarded objects at once.
 //!
