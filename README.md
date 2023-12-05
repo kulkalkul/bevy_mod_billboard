@@ -19,7 +19,7 @@ Billboard text and texture support for bevy
 
 | Bevy Version | Crate Version |
 |--------------|---------------|
-| `0.12`       | `0.5.0`       |
+| `0.12`       | `0.5.1`       |
 | `0.11`       | `0.4.1`       |
 | `0.10`       | `0.3.0`       |
 | `0.10`       | `0.2.1`       |
@@ -76,6 +76,9 @@ Full examples at [examples](examples).
 
 ## Changelog
 
+### [0.5.1] - 2023-12-05
+- Fix billboard propagation not working.
+
 ### [0.5.0] - 2023-12-04
 - Upgrade to Bevy 0.12 (@robftm).
 - Remove texture array implementation.
@@ -91,9 +94,9 @@ Full examples at [examples](examples).
 - Fix missing texture binding flag.
 
 ### [0.4.0] - 2023-07-24
-- Support HDR(@robftm).
-- Add rotation locking(@robftm).
-- Upgrade to Bevy 0.11(@robftm).
+- Support HDR (@robftm).
+- Add rotation locking (@robftm).
+- Upgrade to Bevy 0.11 (@robftm).
 
 Full changelog at [CHANGELOG.md](CHANGELOG.md).
 
