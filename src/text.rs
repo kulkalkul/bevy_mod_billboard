@@ -161,77 +161,94 @@ pub fn update_billboard_text_layout(
             billboard_text_handles.clear();
 
             for (glyphs, atlas) in atlases.into_values() {
-                let mut positions = Vec::with_capacity(info.glyphs.len() * 4);
-                let mut uvs = Vec::with_capacity(info.glyphs.len() * 4);
-                let mut colors = Vec::with_capacity(info.glyphs.len() * 4);
-                let mut indices = Vec::with_capacity(info.glyphs.len() * 6);
-
-                let texture = glyphs.first().map(|glyph| glyph.atlas_info.texture.clone_weak()).expect("at least one glyph exists and all glyphs share the same texture so we can just take the first");
+                if glyphs.is_empty() {
+                    // skip all the initialization below if no glyphs are here
+                    continue;
+                }
 
                 let mut color = Color::WHITE.as_linear_rgba_f32();
                 let mut current_section = usize::MAX;
 
-                for PositionedGlyph {
-                    position,
-                    size,
-                    atlas_info,
-                    section_index,
-                    ..
-                } in glyphs
-                {
-                    let index = positions.len() as u32;
-                    let position = position + alignment_translation;
+                // group glyphs by texture
+                let grouped_glyphs = glyphs
+                    .into_iter()
+                    .map(|glyph| (glyph.atlas_info.texture.clone_weak(), glyph))
+                    .fold(
+                        HashMap::<_, Vec<_>>::new(),
+                        |mut hm, (texture_id, glyph)| {
+                            hm.entry(texture_id).or_default().push(glyph);
+                            hm
+                        },
+                    );
 
-                    let half_size = size / 2.0;
-                    let top_left = position - half_size;
-                    let bottom_right = position + half_size;
+                for (texture, glyphs) in grouped_glyphs {
+                    let mut positions = Vec::with_capacity(info.glyphs.len() * 4);
+                    let mut uvs = Vec::with_capacity(info.glyphs.len() * 4);
+                    let mut colors = Vec::with_capacity(info.glyphs.len() * 4);
+                    let mut indices = Vec::with_capacity(info.glyphs.len() * 6);
 
-                    positions.extend([
-                        [top_left.x, top_left.y, 0.0],
-                        [top_left.x, bottom_right.y, 0.0],
-                        [bottom_right.x, bottom_right.y, 0.0],
-                        [bottom_right.x, top_left.y, 0.0],
-                    ]);
+                    for PositionedGlyph {
+                        position,
+                        size,
+                        atlas_info,
+                        section_index,
+                        ..
+                    } in glyphs
+                    {
+                        let index = positions.len() as u32;
+                        let position = position + alignment_translation;
 
-                    let Rect { min, max } = atlas.textures[atlas_info.glyph_index];
-                    let min = min / atlas.size;
-                    let max = max / atlas.size;
+                        let half_size = size / 2.0;
+                        let top_left = position - half_size;
+                        let bottom_right = position + half_size;
 
-                    uvs.extend([
-                        [min.x, max.y],
-                        [min.x, min.y],
-                        [max.x, min.y],
-                        [max.x, max.y],
-                    ]);
+                        positions.extend([
+                            [top_left.x, top_left.y, 0.0],
+                            [top_left.x, bottom_right.y, 0.0],
+                            [bottom_right.x, bottom_right.y, 0.0],
+                            [bottom_right.x, top_left.y, 0.0],
+                        ]);
 
-                    if section_index != current_section {
-                        color = text.sections[section_index]
-                            .style
-                            .color
-                            .as_linear_rgba_f32();
-                        current_section = section_index;
+                        let Rect { min, max } = atlas.textures[atlas_info.glyph_index];
+                        let min = min / atlas.size;
+                        let max = max / atlas.size;
+
+                        uvs.extend([
+                            [min.x, max.y],
+                            [min.x, min.y],
+                            [max.x, min.y],
+                            [max.x, max.y],
+                        ]);
+
+                        if section_index != current_section {
+                            color = text.sections[section_index]
+                                .style
+                                .color
+                                .as_linear_rgba_f32();
+                            current_section = section_index;
+                        }
+
+                        colors.extend([color, color, color, color]);
+
+                        indices.extend([index, index + 2, index + 1, index, index + 3, index + 2]);
                     }
 
-                    colors.extend([color, color, color, color]);
+                    let mut mesh = Mesh::new(
+                        PrimitiveTopology::TriangleList,
+                        RenderAssetUsages::default(),
+                    );
 
-                    indices.extend([index, index + 2, index + 1, index, index + 3, index + 2]);
+                    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+                    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+                    mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
+
+                    mesh.insert_indices(Indices::U32(indices));
+
+                    billboard_text_handles.push(BillboardTextHandleGroup {
+                        mesh: meshes.add(mesh),
+                        image: texture,
+                    });
                 }
-
-                let mut mesh = Mesh::new(
-                    PrimitiveTopology::TriangleList,
-                    RenderAssetUsages::default(),
-                );
-
-                mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-                mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
-                mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
-
-                mesh.insert_indices(Indices::U32(indices));
-
-                billboard_text_handles.push(BillboardTextHandleGroup {
-                    mesh: meshes.add(mesh),
-                    image: texture,
-                });
             }
         }
     }
