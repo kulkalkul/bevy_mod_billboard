@@ -168,10 +168,12 @@ pub fn queue_billboard_texture(
     // If an image has changed, the GpuImage has (probably) changed
     for event in &events.images {
         match event {
-            AssetEvent::Added { .. } | AssetEvent::LoadedWithDependencies { .. } => None,
-            AssetEvent::Modified { id }
-            | AssetEvent::Removed { id }
-            | AssetEvent::Unused { id } => image_bind_groups.values.remove(id),
+            AssetEvent::Unused { .. }
+            | AssetEvent::Added { .. }
+            | AssetEvent::LoadedWithDependencies { .. } => None,
+            AssetEvent::Modified { id } | AssetEvent::Removed { id } => {
+                image_bind_groups.values.remove(id)
+            }
         };
     }
 
@@ -462,13 +464,13 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardBindGroup<I> {
         billboard_bind_group: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        pass.set_bind_group(
-            I,
-            &billboard_bind_group.into_inner().value,
-            &[billboard_index
-                .expect("billboard index entity exists")
-                .index()],
-        );
+        let billboard_bind_group = billboard_bind_group.into_inner();
+
+        let Some(billboard_index) = billboard_index else {
+            return RenderCommandResult::Failure;
+        };
+
+        pass.set_bind_group(I, &billboard_bind_group.value, &[billboard_index.index()]);
 
         RenderCommandResult::Success
     }
@@ -487,16 +489,13 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardTextureBindGro
         images: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        let bind_group = images
-            .into_inner()
-            .values
-            .get(
-                &billboard_texture
-                    .expect("bildboard render texture entity exists")
-                    .id,
-            )
-            .unwrap();
+        let images = images.into_inner();
 
+        let Some(billboard_texture) = billboard_texture else {
+            return RenderCommandResult::Failure;
+        };
+
+        let bind_group = images.values.get(&billboard_texture.id).unwrap();
         pass.set_bind_group(I, bind_group, &[]);
 
         RenderCommandResult::Success
@@ -516,10 +515,11 @@ impl RenderCommand<Transparent3d> for DrawBillboardMesh {
         meshes: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        if let Some(gpu_mesh) = meshes
-            .into_inner()
-            .get(mesh.expect("billboard mesh entity exists").id)
-        {
+        let Some(mesh) = mesh else {
+            return RenderCommandResult::Failure;
+        };
+
+        if let Some(gpu_mesh) = meshes.into_inner().get(mesh.id) {
             pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
 
             match &gpu_mesh.buffer_info {
