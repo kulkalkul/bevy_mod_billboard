@@ -20,7 +20,7 @@ smallvec = "1.11.0"
 bitflags = "2.3"
 
 [dependencies.bevy]
-version = "0.12"
+version = "0.13"
 default_features = false
 features = [
     "bevy_core_pipeline",
@@ -34,4 +34,4 @@ features = [
 ]
 
 [dev-dependencies]
-bevy = "0.12.1"
+bevy = "0.13"
