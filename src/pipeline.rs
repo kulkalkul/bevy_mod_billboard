@@ -170,9 +170,9 @@ pub fn queue_billboard_texture(
     for event in &events.images {
         match event {
             AssetEvent::Added { .. } | AssetEvent::LoadedWithDependencies { .. } => None,
-            AssetEvent::Modified { id } | AssetEvent::Removed { id } => {
-                image_bind_groups.values.remove(id)
-            }
+            AssetEvent::Modified { id }
+            | AssetEvent::Removed { id }
+            | AssetEvent::Unused { id } => image_bind_groups.values.remove(id),
         };
     }
 
