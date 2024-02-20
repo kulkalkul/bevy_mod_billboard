@@ -19,13 +19,12 @@ use bevy::render::render_phase::{
     TrackedRenderPass,
 };
 use bevy::render::render_resource::{
-    BindGroup, BindGroupEntry, BindGroupLayout, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
-    BindingResource, BindingType, BlendComponent, BlendFactor, BlendOperation, BlendState,
-    BufferBindingType, ColorTargetState, ColorWrites, CompareFunction, DepthStencilState,
-    FragmentState, FrontFace, MultisampleState, PipelineCache, PolygonMode, PrimitiveState,
-    RenderPipelineDescriptor, SamplerBindingType, ShaderStages, ShaderType,
-    SpecializedMeshPipeline, SpecializedMeshPipelineError, SpecializedMeshPipelines, TextureFormat,
-    TextureSampleType, TextureViewDimension, VertexState,
+    BindGroup, BindGroupEntry, BindGroupLayout, BindGroupLayoutEntry, BindingResource, BindingType,
+    BlendComponent, BlendFactor, BlendOperation, BlendState, BufferBindingType, ColorTargetState,
+    ColorWrites, CompareFunction, DepthStencilState, FragmentState, FrontFace, MultisampleState,
+    PipelineCache, PolygonMode, PrimitiveState, RenderPipelineDescriptor, SamplerBindingType,
+    ShaderStages, ShaderType, SpecializedMeshPipeline, SpecializedMeshPipelineError,
+    SpecializedMeshPipelines, TextureFormat, TextureSampleType, TextureViewDimension, VertexState,
 };
 use bevy::render::renderer::RenderDevice;
 use bevy::render::texture::BevyDefault;
@@ -434,13 +433,13 @@ impl SpecializedMeshPipeline for BillboardPipeline {
 pub struct SetBillboardViewBindGroup<const I: usize>;
 impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardViewBindGroup<I> {
     type Param = ();
-    type ViewWorldQuery = (Read<ViewUniformOffset>, Read<BillboardViewBindGroup>);
-    type ItemWorldQuery = ();
+    type ViewQuery = (Read<ViewUniformOffset>, Read<BillboardViewBindGroup>);
+    type ItemQuery = ();
 
     fn render<'w>(
         _item: &Transparent3d,
-        (view_uniform, billboard_mesh_bind_group): ROQueryItem<'w, Self::ViewWorldQuery>,
-        _item_query: ROQueryItem<'w, Self::ItemWorldQuery>,
+        (view_uniform, billboard_mesh_bind_group): ROQueryItem<'w, Self::ViewQuery>,
+        _item_query: Option<ROQueryItem<'w, Self::ItemQuery>>,
         _param: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
@@ -453,20 +452,22 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardViewBindGroup<
 pub struct SetBillboardBindGroup<const I: usize>;
 impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardBindGroup<I> {
     type Param = SRes<BillboardBindGroup>;
-    type ViewWorldQuery = ();
-    type ItemWorldQuery = Read<DynamicUniformIndex<BillboardUniform>>;
+    type ViewQuery = ();
+    type ItemQuery = Read<DynamicUniformIndex<BillboardUniform>>;
 
     fn render<'w>(
         _item: &Transparent3d,
-        _view: ROQueryItem<'w, Self::ViewWorldQuery>,
-        billboard_index: ROQueryItem<'w, Self::ItemWorldQuery>,
+        _view: ROQueryItem<'w, Self::ViewQuery>,
+        billboard_index: Option<ROQueryItem<'w, Self::ItemQuery>>,
         billboard_bind_group: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
         pass.set_bind_group(
             I,
             &billboard_bind_group.into_inner().value,
-            &[billboard_index.index()],
+            &[billboard_index
+                .expect("billboard index entity exists")
+                .index()],
         );
 
         RenderCommandResult::Success
@@ -476,20 +477,24 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardBindGroup<I> {
 pub struct SetBillboardTextureBindGroup<const I: usize>;
 impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardTextureBindGroup<I> {
     type Param = SRes<BillboardImageBindGroups>;
-    type ViewWorldQuery = ();
-    type ItemWorldQuery = Read<RenderBillboardImage>;
+    type ViewQuery = ();
+    type ItemQuery = Read<RenderBillboardImage>;
 
     fn render<'w>(
         _item: &Transparent3d,
-        _view: ROQueryItem<'w, Self::ViewWorldQuery>,
-        billboard_texture: ROQueryItem<'w, Self::ItemWorldQuery>,
+        _view: ROQueryItem<'w, Self::ViewQuery>,
+        billboard_texture: Option<ROQueryItem<'w, Self::ItemQuery>>,
         images: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
         let bind_group = images
             .into_inner()
             .values
-            .get(&billboard_texture.id)
+            .get(
+                &billboard_texture
+                    .expect("bildboard render texture entity exists")
+                    .id,
+            )
             .unwrap();
 
         pass.set_bind_group(I, bind_group, &[]);
@@ -501,17 +506,20 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardTextureBindGro
 pub struct DrawBillboardMesh;
 impl RenderCommand<Transparent3d> for DrawBillboardMesh {
     type Param = SRes<RenderAssets<Mesh>>;
-    type ViewWorldQuery = ();
-    type ItemWorldQuery = Read<RenderBillboardMesh>;
+    type ViewQuery = ();
+    type ItemQuery = Read<RenderBillboardMesh>;
 
     fn render<'w>(
         _item: &Transparent3d,
-        _view: ROQueryItem<'w, Self::ViewWorldQuery>,
-        mesh: ROQueryItem<'w, Self::ItemWorldQuery>,
+        _view: ROQueryItem<'w, Self::ViewQuery>,
+        mesh: Option<ROQueryItem<'w, Self::ItemQuery>>,
         meshes: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
-        if let Some(gpu_mesh) = meshes.into_inner().get(mesh.id) {
+        if let Some(gpu_mesh) = meshes
+            .into_inner()
+            .get(mesh.expect("billboard mesh entity exists").id)
+        {
             pass.set_vertex_buffer(0, gpu_mesh.vertex_buffer.slice(..));
 
             match &gpu_mesh.buffer_info {
