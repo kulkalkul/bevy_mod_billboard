@@ -271,9 +271,9 @@ impl FromWorld for BillboardPipeline {
 
         let (render_device,) = system_state.get(world);
 
-        let view_layout = render_device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: Some("billboard_view_layout"),
-            entries: &[BindGroupLayoutEntry {
+        let view_layout = render_device.create_bind_group_layout(
+            "billboard_view_layout",
+            &[BindGroupLayoutEntry {
                 binding: 0,
                 visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
                 ty: BindingType::Buffer {
@@ -283,11 +283,11 @@ impl FromWorld for BillboardPipeline {
                 },
                 count: None,
             }],
-        });
+        );
 
-        let billboard_layout = render_device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: Some("billboard_layout"),
-            entries: &[BindGroupLayoutEntry {
+        let billboard_layout = render_device.create_bind_group_layout(
+            "billboard_layout",
+            &[BindGroupLayoutEntry {
                 binding: 0,
                 visibility: ShaderStages::VERTEX,
                 ty: BindingType::Buffer {
@@ -297,11 +297,11 @@ impl FromWorld for BillboardPipeline {
                 },
                 count: None,
             }],
-        });
+        );
 
-        let texture_layout = render_device.create_bind_group_layout(&BindGroupLayoutDescriptor {
-            label: Some("billboard_texture_layout"),
-            entries: &[
+        let texture_layout = render_device.create_bind_group_layout(
+            "billboard_texture_layout",
+            &[
                 BindGroupLayoutEntry {
                     binding: 0,
                     visibility: ShaderStages::FRAGMENT,
@@ -319,7 +319,7 @@ impl FromWorld for BillboardPipeline {
                     count: None,
                 },
             ],
-        });
+        );
 
         Self {
             view_layout,
