@@ -1,4 +1,3 @@
-use bevy::prelude::shape::Quad;
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
 
@@ -19,7 +18,7 @@ fn setup_billboard(
     let image_handle = asset_server.load("rust-logo-256x256.png");
     commands.spawn(BillboardTextureBundle {
         texture: BillboardTextureHandle(image_handle),
-        mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(2., 2.)))),
+        mesh: BillboardMeshHandle(meshes.add(Rectangle::from_size(Vec2::splat(2.0)))),
         ..default()
     });
 }
@@ -45,7 +44,7 @@ fn setup_scene(
         });
 
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Cube::default()),
+        mesh: meshes.add(Cuboid::default()),
         material: materials.add(Color::GRAY),
         transform: Transform::from_translation(Vec3::NEG_Y * 2.),
         ..default()

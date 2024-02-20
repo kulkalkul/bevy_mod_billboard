@@ -67,7 +67,7 @@ fn setup_scene(
         });
 
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Cube::default()),
+        mesh: meshes.add(Cuboid::default()),
         material: materials.add(Color::BEIGE),
         transform: Transform::from_translation(Vec3::new(1., 0., 0.)),
         ..default()

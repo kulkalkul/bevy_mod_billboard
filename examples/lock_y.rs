@@ -1,4 +1,3 @@
-use bevy::prelude::shape::{Plane, Quad};
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
 use bevy_mod_billboard::{BillboardLockAxis, BillboardLockAxisBundle};
@@ -22,7 +21,7 @@ fn setup_billboard(
         billboard_bundle: BillboardTextureBundle {
             transform: Transform::from_translation(Vec3::new(2.0, 2.0, 0.0)),
             texture: BillboardTextureHandle(image_handle.clone()),
-            mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(2., 4.)))),
+            mesh: BillboardMeshHandle(meshes.add(Rectangle::from_size(Vec2::new(2.0, 4.0)))),
             ..default()
         },
         lock_axis: BillboardLockAxis {
@@ -33,7 +32,7 @@ fn setup_billboard(
     commands.spawn(BillboardTextureBundle {
         transform: Transform::from_translation(Vec3::new(-2.0, 2.0, 0.0)),
         texture: BillboardTextureHandle(image_handle),
-        mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(2., 4.)))),
+        mesh: BillboardMeshHandle(meshes.add(Rectangle::from_size(Vec2::new(2.0, 4.0)))),
         ..default()
     });
 }
@@ -49,10 +48,8 @@ fn setup_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands.spawn(PbrBundle {
-        mesh: meshes.add(Plane {
-            size: 4.0,
-            subdivisions: 0,
-        }),
+        transform: Transform::from_scale(Vec3::splat(3.0)),
+        mesh: meshes.add(Plane3d::new(Vec3::Y)),
         material: materials.add(Color::SILVER),
         ..default()
     });
