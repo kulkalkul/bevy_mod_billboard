@@ -22,7 +22,7 @@ fn setup_billboard(
         billboard_bundle: BillboardTextureBundle {
             transform: Transform::from_translation(Vec3::new(2.0, 2.0, 0.0)),
             texture: BillboardTextureHandle(image_handle.clone()),
-            mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(2., 4.)).into())),
+            mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(2., 4.)))),
             ..default()
         },
         lock_axis: BillboardLockAxis {
@@ -33,7 +33,7 @@ fn setup_billboard(
     commands.spawn(BillboardTextureBundle {
         transform: Transform::from_translation(Vec3::new(-2.0, 2.0, 0.0)),
         texture: BillboardTextureHandle(image_handle),
-        mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(2., 4.)).into())),
+        mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(2., 4.)))),
         ..default()
     });
 }
@@ -49,14 +49,11 @@ fn setup_scene(
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     commands.spawn(PbrBundle {
-        mesh: meshes.add(
-            Plane {
-                size: 4.0,
-                subdivisions: 0,
-            }
-            .into(),
-        ),
-        material: materials.add(Color::SILVER.into()),
+        mesh: meshes.add(Plane {
+            size: 4.0,
+            subdivisions: 0,
+        }),
+        material: materials.add(Color::SILVER),
         ..default()
     });
 

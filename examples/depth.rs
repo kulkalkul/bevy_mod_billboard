@@ -26,7 +26,7 @@ fn setup_billboard(mut commands: Commands, asset_server: Res<AssetServer>) {
                 color: Color::WHITE,
             },
         )
-        .with_alignment(TextAlignment::Center),
+        .with_justify(JustifyText::Center),
         ..default()
     });
 
@@ -40,7 +40,7 @@ fn setup_billboard(mut commands: Commands, asset_server: Res<AssetServer>) {
                 color: Color::WHITE,
             },
         )
-        .with_alignment(TextAlignment::Center),
+        .with_justify(JustifyText::Center),
         billboard_depth: BillboardDepth(false),
         ..default()
     });
@@ -67,8 +67,8 @@ fn setup_scene(
         });
 
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Cube::default().into()),
-        material: materials.add(Color::BEIGE.into()),
+        mesh: meshes.add(shape::Cube::default()),
+        material: materials.add(Color::BEIGE),
         transform: Transform::from_translation(Vec3::new(1., 0., 0.)),
         ..default()
     });

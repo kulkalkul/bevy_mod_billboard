@@ -32,7 +32,7 @@ fn setup_billboard(mut commands: Commands, asset_server: Res<AssetServer>) {
                 },
             },
         ])
-        .with_alignment(TextAlignment::Center),
+        .with_justify(JustifyText::Center),
         ..default()
     });
 }
@@ -58,8 +58,8 @@ fn setup_scene(
         });
 
     commands.spawn(PbrBundle {
-        mesh: meshes.add(shape::Cube::default().into()),
-        material: materials.add(Color::GRAY.into()),
+        mesh: meshes.add(shape::Cube::default()),
+        material: materials.add(Color::GRAY),
         transform: Transform::from_translation(Vec3::NEG_Y),
         ..default()
     });
