@@ -139,19 +139,22 @@ pub fn update_billboard_text_layout(
             let alignment_translation = info.logical_size * text_anchor;
 
             let length = info.glyphs.len();
-            let mut atlases = HashMap::new();
+            let mut textures = HashMap::new();
 
             for glyph in &info.glyphs {
                 // TODO: Maybe with clever caching, could be possible to get rid of or_insert_with,
                 // TODO: though I don't know how much of a gain it would be. Just keeping this as a note.
-                let entry = atlases
-                    .entry(glyph.atlas_info.texture_atlas.clone_weak())
+                let entry = textures
+                    .entry(glyph.atlas_info.texture.clone_weak())
                     .or_insert_with(|| {
                         (
                             Vec::with_capacity(length),
-                            texture_atlases
-                                .get(&glyph.atlas_info.texture_atlas)
-                                .expect("Atlas should exist"),
+                            (
+                                texture_atlases
+                                    .get(&glyph.atlas_info.texture_atlas)
+                                    .expect("Atlas should exist"),
+                                glyph.atlas_info.texture.clone_weak(),
+                            ),
                         )
                     });
 
@@ -160,95 +163,76 @@ pub fn update_billboard_text_layout(
 
             billboard_text_handles.clear();
 
-            for (glyphs, atlas) in atlases.into_values() {
-                if glyphs.is_empty() {
-                    // skip all the initialization below if no glyphs are here
-                    continue;
-                }
+            for (glyphs, (atlas, texture)) in textures.into_values() {
+                let mut positions = Vec::with_capacity(info.glyphs.len() * 4);
+                let mut uvs = Vec::with_capacity(info.glyphs.len() * 4);
+                let mut colors = Vec::with_capacity(info.glyphs.len() * 4);
+                let mut indices = Vec::with_capacity(info.glyphs.len() * 6);
 
                 let mut color = Color::WHITE.as_linear_rgba_f32();
                 let mut current_section = usize::MAX;
 
-                // group glyphs by texture
-                let grouped_glyphs = glyphs
-                    .into_iter()
-                    .map(|glyph| (glyph.atlas_info.texture.clone_weak(), glyph))
-                    .fold(
-                        HashMap::<_, Vec<_>>::new(),
-                        |mut hm, (texture_id, glyph)| {
-                            hm.entry(texture_id).or_default().push(glyph);
-                            hm
-                        },
-                    );
+                for PositionedGlyph {
+                    position,
+                    size,
+                    atlas_info,
+                    section_index,
+                    ..
+                } in glyphs
+                {
+                    let index = positions.len() as u32;
+                    let position = position + alignment_translation;
 
-                for (texture, glyphs) in grouped_glyphs {
-                    let mut positions = Vec::with_capacity(info.glyphs.len() * 4);
-                    let mut uvs = Vec::with_capacity(info.glyphs.len() * 4);
-                    let mut colors = Vec::with_capacity(info.glyphs.len() * 4);
-                    let mut indices = Vec::with_capacity(info.glyphs.len() * 6);
+                    let half_size = size / 2.0;
+                    let top_left = position - half_size;
+                    let bottom_right = position + half_size;
 
-                    for PositionedGlyph {
-                        position,
-                        size,
-                        atlas_info,
-                        section_index,
-                        ..
-                    } in glyphs
-                    {
-                        let index = positions.len() as u32;
-                        let position = position + alignment_translation;
+                    positions.extend([
+                        [top_left.x, top_left.y, 0.0],
+                        [top_left.x, bottom_right.y, 0.0],
+                        [bottom_right.x, bottom_right.y, 0.0],
+                        [bottom_right.x, top_left.y, 0.0],
+                    ]);
 
-                        let half_size = size / 2.0;
-                        let top_left = position - half_size;
-                        let bottom_right = position + half_size;
+                    let Rect { min, max } = atlas.textures[atlas_info.glyph_index];
+                    let min = min / atlas.size;
+                    let max = max / atlas.size;
 
-                        positions.extend([
-                            [top_left.x, top_left.y, 0.0],
-                            [top_left.x, bottom_right.y, 0.0],
-                            [bottom_right.x, bottom_right.y, 0.0],
-                            [bottom_right.x, top_left.y, 0.0],
-                        ]);
+                    uvs.extend([
+                        [min.x, max.y],
+                        [min.x, min.y],
+                        [max.x, min.y],
+                        [max.x, max.y],
+                    ]);
 
-                        let Rect { min, max } = atlas.textures[atlas_info.glyph_index];
-                        let min = min / atlas.size;
-                        let max = max / atlas.size;
-
-                        uvs.extend([
-                            [min.x, max.y],
-                            [min.x, min.y],
-                            [max.x, min.y],
-                            [max.x, max.y],
-                        ]);
-
-                        if section_index != current_section {
-                            color = text.sections[section_index]
-                                .style
-                                .color
-                                .as_linear_rgba_f32();
-                            current_section = section_index;
-                        }
-
-                        colors.extend([color, color, color, color]);
-
-                        indices.extend([index, index + 2, index + 1, index, index + 3, index + 2]);
+                    if section_index != current_section {
+                        color = text.sections[section_index]
+                            .style
+                            .color
+                            .as_linear_rgba_f32();
+                        current_section = section_index;
                     }
 
-                    let mut mesh = Mesh::new(
-                        PrimitiveTopology::TriangleList,
-                        RenderAssetUsages::default(),
-                    );
+                    colors.extend([color, color, color, color]);
 
-                    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-                    mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
-                    mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
-
-                    mesh.insert_indices(Indices::U32(indices));
-
-                    billboard_text_handles.push(BillboardTextHandleGroup {
-                        mesh: meshes.add(mesh),
-                        image: texture,
-                    });
+                    indices.extend([index, index + 2, index + 1, index, index + 3, index + 2]);
                 }
+
+                let mut mesh = Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                );
+
+                mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+                mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
+                mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
+
+                mesh.insert_indices(Indices::U32(indices));
+
+                billboard_text_handles.push(BillboardTextHandleGroup {
+                    mesh: meshes.add(mesh),
+                    image: texture,
+                });
             }
         }
     }
