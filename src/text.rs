@@ -3,11 +3,12 @@ use crate::utils::calculate_billboard_uniform;
 use crate::{BillboardDepth, BillboardLockAxis};
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
+use bevy::render::render_asset::RenderAssetUsages;
 use bevy::render::Extract;
 use bevy::sprite::Anchor;
 use bevy::text::{
-    BreakLineOn, FontAtlasSets, FontAtlasWarning, PositionedGlyph, Text2dBounds, TextPipeline,
-    TextSettings, YAxisOrientation,
+    BreakLineOn, FontAtlasSets, PositionedGlyph, Text2dBounds, TextPipeline, TextSettings,
+    YAxisOrientation,
 };
 use bevy::utils::{HashMap, HashSet};
 use smallvec::SmallVec;
@@ -85,8 +86,7 @@ pub fn update_billboard_text_layout(
     mut meshes: ResMut<Assets<Mesh>>,
     fonts: Res<Assets<Font>>,
     text_settings: Res<TextSettings>,
-    mut font_atlas_warning: ResMut<FontAtlasWarning>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     mut font_atlas_set_storage: ResMut<FontAtlasSets>,
     mut text_pipeline: ResMut<TextPipeline>,
     mut text_query: Query<(
@@ -97,7 +97,7 @@ pub fn update_billboard_text_layout(
         &mut BillboardTextHandles,
     )>,
 ) {
-    const SCALE_FACTOR: f64 = 1.0;
+    const SCALE_FACTOR: f32 = 1.0;
 
     for (entity, text, bounds, anchor, mut billboard_text_handles) in &mut text_query {
         if text.is_changed() || bounds.is_changed() || anchor.is_changed() || queue.remove(&entity)
@@ -115,14 +115,13 @@ pub fn update_billboard_text_layout(
                 &fonts,
                 &text.sections,
                 SCALE_FACTOR,
-                text.alignment,
+                text.justify,
                 text.linebreak_behavior,
                 text_bounds,
                 &mut font_atlas_set_storage,
                 &mut texture_atlases,
                 &mut images,
                 text_settings.as_ref(),
-                &mut font_atlas_warning,
                 YAxisOrientation::BottomToTop,
             ) {
                 Err(TextError::NoSuchFont) => {
@@ -166,6 +165,8 @@ pub fn update_billboard_text_layout(
                 let mut uvs = Vec::with_capacity(info.glyphs.len() * 4);
                 let mut colors = Vec::with_capacity(info.glyphs.len() * 4);
                 let mut indices = Vec::with_capacity(info.glyphs.len() * 6);
+
+                let texture = glyphs.first().map(|glyph| glyph.atlas_info.texture.clone_weak()).expect("at least one glyph exists and all glyphs share the same texture so we can just take the first");
 
                 let mut color = Color::WHITE.as_linear_rgba_f32();
                 let mut current_section = usize::MAX;
@@ -216,17 +217,20 @@ pub fn update_billboard_text_layout(
                     indices.extend([index, index + 2, index + 1, index, index + 3, index + 2]);
                 }
 
-                let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+                let mut mesh = Mesh::new(
+                    PrimitiveTopology::TriangleList,
+                    RenderAssetUsages::default(),
+                );
 
                 mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);
                 mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
 
-                mesh.set_indices(Some(Indices::U32(indices)));
+                mesh.insert_indices(Indices::U32(indices));
 
                 billboard_text_handles.push(BillboardTextHandleGroup {
                     mesh: meshes.add(mesh),
-                    image: atlas.texture.clone_weak(),
+                    image: texture,
                 });
             }
         }
