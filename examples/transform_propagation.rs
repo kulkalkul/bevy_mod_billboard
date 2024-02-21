@@ -24,8 +24,8 @@ fn setup_billboard(
     commands
         .spawn((
             PbrBundle {
-                mesh: meshes.add(shape::Cube::default().into()),
-                material: materials.add(Color::GRAY.into()),
+                mesh: meshes.add(Cuboid::default()),
+                material: materials.add(Color::GRAY),
                 transform: Transform::from_translation(Vec3::new(0.0, -2.0, 1.0)),
                 ..default()
             },
@@ -43,7 +43,7 @@ fn setup_billboard(
                         color: Color::WHITE,
                     },
                 )
-                .with_alignment(TextAlignment::Center),
+                .with_justify(JustifyText::Center),
                 ..default()
             });
         });
