@@ -12,11 +12,11 @@ use bevy::prelude::{
     ResMut, Resource, With, World,
 };
 use bevy::render::extract_component::{ComponentUniforms, DynamicUniformIndex};
-use bevy::render::mesh::{GpuBufferInfo, MeshVertexBufferLayout, PrimitiveTopology};
+use bevy::render::mesh::{GpuBufferInfo, GpuMesh, MeshVertexBufferLayoutRef, PrimitiveTopology};
 use bevy::render::render_asset::RenderAssets;
 use bevy::render::render_phase::{
-    DrawFunctions, RenderCommand, RenderCommandResult, RenderPhase, SetItemPipeline,
-    TrackedRenderPass,
+    DrawFunctions, PhaseItemExtraIndex, RenderCommand, RenderCommandResult, SetItemPipeline,
+    TrackedRenderPass, ViewSortedRenderPhases,
 };
 use bevy::render::render_resource::{
     BindGroup, BindGroupEntry, BindGroupLayout, BindGroupLayoutEntry, BindingResource, BindingType,
@@ -27,7 +27,7 @@ use bevy::render::render_resource::{
     SpecializedMeshPipelines, TextureFormat, TextureSampleType, TextureViewDimension, VertexState,
 };
 use bevy::render::renderer::RenderDevice;
-use bevy::render::texture::BevyDefault;
+use bevy::render::texture::{BevyDefault, GpuImage};
 use bevy::render::view::{
     ExtractedView, ViewTarget, ViewUniform, ViewUniformOffset, ViewUniforms, VisibleEntities,
 };
@@ -144,11 +144,8 @@ pub fn prepare_billboard_bind_group(
 }
 
 pub fn queue_billboard_texture(
-    mut views: Query<(
-        &ExtractedView,
-        &VisibleEntities,
-        &mut RenderPhase<Transparent3d>,
-    )>,
+    mut views: Query<(Entity, &ExtractedView, &VisibleEntities)>,
+    mut transparent_render_phases: ResMut<ViewSortedRenderPhases<Transparent3d>>,
     mut pipeline_cache: ResMut<PipelineCache>,
     mut image_bind_groups: ResMut<BillboardImageBindGroups>,
     mut billboard_pipelines: ResMut<SpecializedMeshPipelines<BillboardPipeline>>,
@@ -177,7 +174,11 @@ pub fn queue_billboard_texture(
         };
     }
 
-    for (view, visible_entities, mut transparent_phase) in &mut views {
+    for (view_entity, view, visible_entities) in &mut views {
+        let Some(transparent_phase) = transparent_render_phases.get_mut(&view_entity) else {
+            continue;
+        };
+
         let draw_transparent_billboard = transparent_draw_functions
             .read()
             .get_id::<DrawBillboard>()
@@ -185,76 +186,78 @@ pub fn queue_billboard_texture(
 
         let rangefinder = view.rangefinder3d();
 
-        for visible_entity in &visible_entities.entities {
-            let Ok((uniform, mesh, image, billboard)) = billboards.get(*visible_entity) else {
-                continue;
-            };
-            let Some(gpu_image) = gpu_images.get(image.id) else {
-                continue;
-            };
-            let Some(gpu_mesh) = gpu_meshes.get(mesh.id) else {
-                continue;
-            };
-
-            let mut key = BillboardPipelineKey::from_msaa_samples(msaa.samples());
-
-            if billboard.depth.0 {
-                key |= BillboardPipelineKey::DEPTH;
-            }
-
-            if billboard.lock_axis.map_or(false, |lock| lock.y_axis) {
-                key |= BillboardPipelineKey::LOCK_Y;
-            }
-            if billboard.lock_axis.map_or(false, |lock| lock.rotation) {
-                key |= BillboardPipelineKey::LOCK_ROTATION;
-            }
-
-            if view.hdr {
-                key |= BillboardPipelineKey::HDR;
-            }
-
-            let pipeline_id = billboard_pipelines.specialize(
-                &mut pipeline_cache,
-                &billboard_pipeline,
-                key,
-                &gpu_mesh.layout,
-            );
-
-            let pipeline_id = match pipeline_id {
-                Ok(id) => id,
-                Err(err) => {
-                    error!("{err:?}");
+        for (_type_id, visible_entities) in &visible_entities.entities {
+            for visible_entity in visible_entities {
+                let Ok((uniform, mesh, image, billboard)) = billboards.get(*visible_entity) else {
                     continue;
+                };
+                let Some(gpu_image) = gpu_images.get(image.id) else {
+                    continue;
+                };
+                let Some(gpu_mesh) = gpu_meshes.get(mesh.id) else {
+                    continue;
+                };
+
+                let mut key = BillboardPipelineKey::from_msaa_samples(msaa.samples());
+
+                if billboard.depth.0 {
+                    key |= BillboardPipelineKey::DEPTH;
                 }
-            };
 
-            let distance = rangefinder.distance(&uniform.transform);
+                if billboard.lock_axis.map_or(false, |lock| lock.y_axis) {
+                    key |= BillboardPipelineKey::LOCK_Y;
+                }
+                if billboard.lock_axis.map_or(false, |lock| lock.rotation) {
+                    key |= BillboardPipelineKey::LOCK_ROTATION;
+                }
 
-            image_bind_groups.values.entry(image.id).or_insert_with(|| {
-                render_device.create_bind_group(
-                    Some("billboard_texture_bind_group"),
-                    &billboard_pipeline.texture_layout,
-                    &[
-                        BindGroupEntry {
-                            binding: 0,
-                            resource: BindingResource::TextureView(&gpu_image.texture_view),
-                        },
-                        BindGroupEntry {
-                            binding: 1,
-                            resource: BindingResource::Sampler(&gpu_image.sampler),
-                        },
-                    ],
-                )
-            });
+                if view.hdr {
+                    key |= BillboardPipelineKey::HDR;
+                }
 
-            transparent_phase.add(Transparent3d {
-                pipeline: pipeline_id,
-                entity: *visible_entity,
-                draw_function: draw_transparent_billboard,
-                batch_range: 0..1,
-                dynamic_offset: None,
-                distance,
-            });
+                let pipeline_id = billboard_pipelines.specialize(
+                    &mut pipeline_cache,
+                    &billboard_pipeline,
+                    key,
+                    &gpu_mesh.layout,
+                );
+
+                let pipeline_id = match pipeline_id {
+                    Ok(id) => id,
+                    Err(err) => {
+                        error!("{err:?}");
+                        continue;
+                    }
+                };
+
+                let distance = rangefinder.distance(&uniform.transform);
+
+                image_bind_groups.values.entry(image.id).or_insert_with(|| {
+                    render_device.create_bind_group(
+                        Some("billboard_texture_bind_group"),
+                        &billboard_pipeline.texture_layout,
+                        &[
+                            BindGroupEntry {
+                                binding: 0,
+                                resource: BindingResource::TextureView(&gpu_image.texture_view),
+                            },
+                            BindGroupEntry {
+                                binding: 1,
+                                resource: BindingResource::Sampler(&gpu_image.sampler),
+                            },
+                        ],
+                    )
+                });
+
+                transparent_phase.add(Transparent3d {
+                    pipeline: pipeline_id,
+                    entity: *visible_entity,
+                    draw_function: draw_transparent_billboard,
+                    batch_range: 0..1,
+                    extra_index: PhaseItemExtraIndex::NONE,
+                    distance,
+                });
+            }
         }
     }
 }
@@ -336,7 +339,7 @@ impl SpecializedMeshPipeline for BillboardPipeline {
     fn specialize(
         &self,
         key: Self::Key,
-        layout: &MeshVertexBufferLayout,
+        layout: &MeshVertexBufferLayoutRef,
     ) -> Result<RenderPipelineDescriptor, SpecializedMeshPipelineError> {
         const DEF_VERTEX_COLOR: &str = "VERTEX_COLOR";
         const DEF_LOCK_Y: &str = "LOCK_Y";
@@ -347,6 +350,8 @@ impl SpecializedMeshPipeline for BillboardPipeline {
 
         attributes.push(Mesh::ATTRIBUTE_POSITION.at_shader_location(0));
         attributes.push(Mesh::ATTRIBUTE_UV_0.at_shader_location(1));
+
+        let layout = layout.0.as_ref();
 
         if layout.contains(Mesh::ATTRIBUTE_COLOR) {
             shader_defs.push(DEF_VERTEX_COLOR.into());
@@ -504,7 +509,7 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardTextureBindGro
 
 pub struct DrawBillboardMesh;
 impl RenderCommand<Transparent3d> for DrawBillboardMesh {
-    type Param = SRes<RenderAssets<Mesh>>;
+    type Param = SRes<RenderAssets<GpuMesh>>;
     type ViewQuery = ();
     type ItemQuery = Read<RenderBillboardMesh>;
 

@@ -2,7 +2,7 @@ use crate::pipeline::{
     prepare_billboard_bind_group, prepare_billboard_view_bind_groups, queue_billboard_texture,
     BillboardImageBindGroups, BillboardPipeline, BillboardUniform, DrawBillboard,
 };
-use crate::text::{extract_billboard_text, update_billboard_text_layout};
+use crate::text::{extract_billboard_text, update_billboard_text_layout, BillboardTextHandles};
 use crate::texture::extract_billboard_texture;
 use crate::{
     BillboardMeshHandle, BillboardTextBounds, BillboardTextureHandle, BILLBOARD_SHADER_HANDLE,
@@ -12,6 +12,8 @@ use bevy::render::camera::CameraUpdateSystem;
 use bevy::render::extract_component::UniformComponentPlugin;
 use bevy::render::render_phase::AddRenderCommand;
 use bevy::render::render_resource::SpecializedMeshPipelines;
+use bevy::render::view::check_visibility;
+use bevy::render::view::VisibilitySystems::CheckVisibility;
 use bevy::render::{RenderApp, RenderSet};
 use bevy::{asset::load_internal_asset, core_pipeline::core_3d::Transparent3d, render::Render};
 
@@ -32,7 +34,11 @@ impl Plugin for BillboardPlugin {
             .register_type::<BillboardTextBounds>()
             .add_systems(
                 PostUpdate,
-                update_billboard_text_layout.ambiguous_with(CameraUpdateSystem),
+                (
+                    update_billboard_text_layout.ambiguous_with(CameraUpdateSystem),
+                    check_visibility::<With<BillboardMeshHandle>>.in_set(CheckVisibility),
+                    check_visibility::<With<BillboardTextHandles>>.in_set(CheckVisibility),
+                ),
             );
     }
 
