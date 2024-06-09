@@ -4,6 +4,7 @@ Billboard text and texture support for bevy
 ![showcase](images/showcase.png)
 
 ## Todo
+- Add documentation
 - Follow Rust API Guidelines: https://rust-lang.github.io/api-guidelines/about.html
 - Batching
 
@@ -19,6 +20,7 @@ Billboard text and texture support for bevy
 
 | Bevy Version | Crate Version |
 |--------------|---------------|
+| `0.13`       | `0.6.0`       |
 | `0.12`       | `0.5.1`       |
 | `0.11`       | `0.4.1`       |
 | `0.10`       | `0.3.0`       |
@@ -76,6 +78,10 @@ Full examples at [examples](examples).
 
 ## Changelog
 
+### [0.6.0] - 2023-09-06
+- Upgrade to Bevy 0.13 (@RobWalt).
+- Enable bevy's wayland & X11 features.
+
 ### [0.5.1] - 2023-12-05
 - Fix billboard propagation not working.
 
@@ -89,16 +95,6 @@ Full examples at [examples](examples).
 - Increase performance for most used text case.
 - Add stress_test example (@alice-i-cecile).
 - Add rotating camera to most of the examples to showcase better.
-
-### [0.4.1] - 2023-08-31
-- Fix missing texture binding flag.
-
-### [0.4.0] - 2023-07-24
-- Support HDR (@robftm).
-- Add rotation locking (@robftm).
-- Upgrade to Bevy 0.11 (@robftm).
-
-Full changelog at [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

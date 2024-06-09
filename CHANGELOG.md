@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.6.0] - 2023-09-06
+- Upgrade to Bevy 0.13 (@RobWalt).
+- Enable bevy's wayland & X11 features.
+
 ## [0.5.1] - 2023-12-05
 - Fix billboard propagation not working.
 
