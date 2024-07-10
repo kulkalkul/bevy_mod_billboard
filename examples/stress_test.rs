@@ -13,7 +13,7 @@
 //! and recompute them every frame.
 
 use bevy::{
-    color::palettes::css,
+    color::palettes,
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
 };
@@ -68,7 +68,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut meshes: Res
                             TextStyle {
                                 font_size: 60.0,
                                 font: fira_sans_regular_handle.clone(),
-                                color: Color::Srgba(css::ORANGE),
+                                color: Color::Srgba(palettes::css::ORANGE),
                             },
                         ),
                         ..default()

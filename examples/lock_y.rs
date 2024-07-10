@@ -1,4 +1,4 @@
-use bevy::color::palettes::css;
+use bevy::color::palettes;
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
 use bevy_mod_billboard::{BillboardLockAxis, BillboardLockAxisBundle};
@@ -51,7 +51,7 @@ fn setup_scene(
     commands.spawn(PbrBundle {
         transform: Transform::from_scale(Vec3::splat(3.0)),
         mesh: meshes.add(Plane3d::new(Vec3::Y, Vec2::splat(1.5))),
-        material: materials.add(Color::Srgba(css::SILVER)),
+        material: materials.add(Color::Srgba(palettes::css::SILVER)),
         ..default()
     });
 

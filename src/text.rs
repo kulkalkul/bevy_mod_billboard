@@ -1,6 +1,7 @@
 use crate::pipeline::{RenderBillboardImage, RenderBillboardMesh};
 use crate::utils::calculate_billboard_uniform;
 use crate::{BillboardDepth, BillboardLockAxis};
+use bevy::color::palettes;
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_asset::RenderAssetUsages;
@@ -169,7 +170,7 @@ pub fn update_billboard_text_layout(
                 let mut colors = Vec::with_capacity(info.glyphs.len() * 4);
                 let mut indices = Vec::with_capacity(info.glyphs.len() * 6);
 
-                let mut color = Color::WHITE.linear().to_f32_array();
+                let mut color = palettes::css::WHITE.to_f32_array();
                 let mut current_section = usize::MAX;
 
                 for PositionedGlyph {
@@ -210,7 +211,7 @@ pub fn update_billboard_text_layout(
                         color = text.sections[section_index]
                             .style
                             .color
-                            .linear()
+                            .to_linear()
                             .to_f32_array();
                         current_section = section_index;
                     }

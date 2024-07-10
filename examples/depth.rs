@@ -1,4 +1,4 @@
-use bevy::color::palettes::css;
+use bevy::color::palettes;
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
 use bevy_mod_billboard::BillboardDepth;
@@ -69,7 +69,7 @@ fn setup_scene(
 
     commands.spawn(PbrBundle {
         mesh: meshes.add(Cuboid::default()),
-        material: materials.add(Color::Srgba(css::BEIGE)),
+        material: materials.add(Color::Srgba(palettes::css::BEIGE)),
         transform: Transform::from_translation(Vec3::new(1., 0., 0.)),
         ..default()
     });
