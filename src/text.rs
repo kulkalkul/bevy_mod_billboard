@@ -1,6 +1,7 @@
 use crate::pipeline::{RenderBillboardImage, RenderBillboardMesh};
 use crate::utils::calculate_billboard_uniform;
 use crate::{BillboardDepth, BillboardLockAxis};
+use bevy::color::palettes;
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_asset::RenderAssetUsages;
@@ -169,7 +170,7 @@ pub fn update_billboard_text_layout(
                 let mut colors = Vec::with_capacity(info.glyphs.len() * 4);
                 let mut indices = Vec::with_capacity(info.glyphs.len() * 6);
 
-                let mut color = Color::WHITE.as_linear_rgba_f32();
+                let mut color = palettes::css::WHITE.to_f32_array();
                 let mut current_section = usize::MAX;
 
                 for PositionedGlyph {
@@ -194,9 +195,10 @@ pub fn update_billboard_text_layout(
                         [bottom_right.x, top_left.y, 0.0],
                     ]);
 
-                    let Rect { min, max } = atlas.textures[atlas_info.glyph_index];
-                    let min = min / atlas.size;
-                    let max = max / atlas.size;
+                    let URect { min, max } = atlas.textures[atlas_info.glyph_index];
+                    let atlas_size = atlas.size.as_vec2();
+                    let min = min.as_vec2() / atlas_size;
+                    let max = max.as_vec2() / atlas_size;
 
                     uvs.extend([
                         [min.x, max.y],
@@ -209,7 +211,8 @@ pub fn update_billboard_text_layout(
                         color = text.sections[section_index]
                             .style
                             .color
-                            .as_linear_rgba_f32();
+                            .to_linear()
+                            .to_f32_array();
                         current_section = section_index;
                     }
 

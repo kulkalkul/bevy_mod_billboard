@@ -1,3 +1,4 @@
+use bevy::color::palettes;
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
 use bevy_mod_billboard::BillboardLockAxis;
@@ -23,7 +24,7 @@ fn setup_billboard(mut commands: Commands, asset_server: Res<AssetServer>) {
                     style: TextStyle {
                         font_size: 60.0,
                         font: fira_sans_regular_handle.clone(),
-                        color: Color::ORANGE,
+                        color: Color::Srgba(palettes::css::ORANGE),
                     },
                 },
                 TextSection {
@@ -67,7 +68,7 @@ fn setup_scene(
 
     commands.spawn(PbrBundle {
         mesh: meshes.add(Cuboid::default()),
-        material: materials.add(Color::GRAY),
+        material: materials.add(Color::Srgba(palettes::css::GRAY)),
         transform: Transform::from_translation(Vec3::NEG_Y),
         ..default()
     });

@@ -1,3 +1,4 @@
+use bevy::color::palettes;
 use bevy::prelude::*;
 use bevy_mod_billboard::prelude::*;
 
@@ -25,7 +26,7 @@ fn setup_billboard(
         .spawn((
             PbrBundle {
                 mesh: meshes.add(Cuboid::default()),
-                material: materials.add(Color::GRAY),
+                material: materials.add(Color::Srgba(palettes::css::GRAY)),
                 transform: Transform::from_translation(Vec3::new(0.0, -2.0, 1.0)),
                 ..default()
             },
