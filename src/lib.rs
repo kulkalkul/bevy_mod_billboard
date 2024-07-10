@@ -29,6 +29,9 @@ impl Default for BillboardDepth {
 }
 
 #[derive(Default, Clone, Copy, Component, Debug, Reflect)]
+pub struct Billboard;
+
+#[derive(Default, Clone, Copy, Component, Debug, Reflect)]
 pub struct BillboardLockAxis {
     pub y_axis: bool,
     pub rotation: bool,
@@ -42,6 +45,7 @@ pub struct BillboardLockAxisBundle<T: Bundle> {
 
 #[derive(Bundle, Default)]
 pub struct BillboardTextureBundle {
+    pub billboard: Billboard,
     pub mesh: BillboardMeshHandle,
     pub texture: BillboardTextureHandle,
     pub transform: Transform,
@@ -54,6 +58,7 @@ pub struct BillboardTextureBundle {
 
 #[derive(Bundle, Default)]
 pub struct BillboardTextBundle {
+    pub billboard: Billboard,
     pub text: Text,
     pub text_bounds: BillboardTextBounds,
     pub text_anchor: Anchor,

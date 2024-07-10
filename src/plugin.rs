@@ -2,10 +2,11 @@ use crate::pipeline::{
     prepare_billboard_bind_group, prepare_billboard_view_bind_groups, queue_billboard_texture,
     BillboardImageBindGroups, BillboardPipeline, BillboardUniform, DrawBillboard,
 };
-use crate::text::{extract_billboard_text, update_billboard_text_layout, BillboardTextHandles};
+use crate::text::{extract_billboard_text, update_billboard_text_layout};
 use crate::texture::extract_billboard_texture;
 use crate::{
-    BillboardMeshHandle, BillboardTextBounds, BillboardTextureHandle, BILLBOARD_SHADER_HANDLE,
+    Billboard, BillboardMeshHandle, BillboardTextBounds, BillboardTextureHandle,
+    BILLBOARD_SHADER_HANDLE,
 };
 use bevy::prelude::*;
 use bevy::render::camera::CameraUpdateSystem;
@@ -36,8 +37,7 @@ impl Plugin for BillboardPlugin {
                 PostUpdate,
                 (
                     update_billboard_text_layout.ambiguous_with(CameraUpdateSystem),
-                    check_visibility::<With<BillboardMeshHandle>>.in_set(CheckVisibility),
-                    check_visibility::<With<BillboardTextHandles>>.in_set(CheckVisibility),
+                    check_visibility::<With<Billboard>>.in_set(CheckVisibility),
                 ),
             );
     }

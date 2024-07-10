@@ -1,5 +1,5 @@
 use crate::text::RenderBillboard;
-use crate::BILLBOARD_SHADER_HANDLE;
+use crate::{Billboard, BILLBOARD_SHADER_HANDLE};
 use bevy::asset::AssetId;
 use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::ecs::query::ROQueryItem;
@@ -186,78 +186,76 @@ pub fn queue_billboard_texture(
 
         let rangefinder = view.rangefinder3d();
 
-        for (_type_id, visible_entities) in &visible_entities.entities {
-            for visible_entity in visible_entities {
-                let Ok((uniform, mesh, image, billboard)) = billboards.get(*visible_entity) else {
-                    continue;
-                };
-                let Some(gpu_image) = gpu_images.get(image.id) else {
-                    continue;
-                };
-                let Some(gpu_mesh) = gpu_meshes.get(mesh.id) else {
-                    continue;
-                };
+        for visible_entity in visible_entities.iter::<With<Billboard>>() {
+            let Ok((uniform, mesh, image, billboard)) = billboards.get(*visible_entity) else {
+                continue;
+            };
+            let Some(gpu_image) = gpu_images.get(image.id) else {
+                continue;
+            };
+            let Some(gpu_mesh) = gpu_meshes.get(mesh.id) else {
+                continue;
+            };
 
-                let mut key = BillboardPipelineKey::from_msaa_samples(msaa.samples());
+            let mut key = BillboardPipelineKey::from_msaa_samples(msaa.samples());
 
-                if billboard.depth.0 {
-                    key |= BillboardPipelineKey::DEPTH;
-                }
-
-                if billboard.lock_axis.map_or(false, |lock| lock.y_axis) {
-                    key |= BillboardPipelineKey::LOCK_Y;
-                }
-                if billboard.lock_axis.map_or(false, |lock| lock.rotation) {
-                    key |= BillboardPipelineKey::LOCK_ROTATION;
-                }
-
-                if view.hdr {
-                    key |= BillboardPipelineKey::HDR;
-                }
-
-                let pipeline_id = billboard_pipelines.specialize(
-                    &mut pipeline_cache,
-                    &billboard_pipeline,
-                    key,
-                    &gpu_mesh.layout,
-                );
-
-                let pipeline_id = match pipeline_id {
-                    Ok(id) => id,
-                    Err(err) => {
-                        error!("{err:?}");
-                        continue;
-                    }
-                };
-
-                let distance = rangefinder.distance(&uniform.transform);
-
-                image_bind_groups.values.entry(image.id).or_insert_with(|| {
-                    render_device.create_bind_group(
-                        Some("billboard_texture_bind_group"),
-                        &billboard_pipeline.texture_layout,
-                        &[
-                            BindGroupEntry {
-                                binding: 0,
-                                resource: BindingResource::TextureView(&gpu_image.texture_view),
-                            },
-                            BindGroupEntry {
-                                binding: 1,
-                                resource: BindingResource::Sampler(&gpu_image.sampler),
-                            },
-                        ],
-                    )
-                });
-
-                transparent_phase.add(Transparent3d {
-                    pipeline: pipeline_id,
-                    entity: *visible_entity,
-                    draw_function: draw_transparent_billboard,
-                    batch_range: 0..1,
-                    extra_index: PhaseItemExtraIndex::NONE,
-                    distance,
-                });
+            if billboard.depth.0 {
+                key |= BillboardPipelineKey::DEPTH;
             }
+
+            if billboard.lock_axis.map_or(false, |lock| lock.y_axis) {
+                key |= BillboardPipelineKey::LOCK_Y;
+            }
+            if billboard.lock_axis.map_or(false, |lock| lock.rotation) {
+                key |= BillboardPipelineKey::LOCK_ROTATION;
+            }
+
+            if view.hdr {
+                key |= BillboardPipelineKey::HDR;
+            }
+
+            let pipeline_id = billboard_pipelines.specialize(
+                &mut pipeline_cache,
+                &billboard_pipeline,
+                key,
+                &gpu_mesh.layout,
+            );
+
+            let pipeline_id = match pipeline_id {
+                Ok(id) => id,
+                Err(err) => {
+                    error!("{err:?}");
+                    continue;
+                }
+            };
+
+            let distance = rangefinder.distance(&uniform.transform);
+
+            image_bind_groups.values.entry(image.id).or_insert_with(|| {
+                render_device.create_bind_group(
+                    Some("billboard_texture_bind_group"),
+                    &billboard_pipeline.texture_layout,
+                    &[
+                        BindGroupEntry {
+                            binding: 0,
+                            resource: BindingResource::TextureView(&gpu_image.texture_view),
+                        },
+                        BindGroupEntry {
+                            binding: 1,
+                            resource: BindingResource::Sampler(&gpu_image.sampler),
+                        },
+                    ],
+                )
+            });
+
+            transparent_phase.add(Transparent3d {
+                pipeline: pipeline_id,
+                entity: *visible_entity,
+                draw_function: draw_transparent_billboard,
+                batch_range: 0..1,
+                extra_index: PhaseItemExtraIndex::NONE,
+                distance,
+            });
         }
     }
 }
