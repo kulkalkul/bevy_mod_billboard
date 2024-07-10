@@ -1,6 +1,10 @@
 # Changelog
 
-## [0.6.0] - 2023-09-06
+## [0.7.0] - 2024-07-11
+- Upgrade to Bevy 0.14 (@interwhy).
+- Add Billboard marker component.
+
+## [0.6.0] - 2024-06-09
 - Upgrade to Bevy 0.13 (@RobWalt).
 - Enable bevy's wayland & X11 features.
 
