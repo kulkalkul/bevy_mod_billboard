@@ -25,10 +25,12 @@ default-features = false
 features = [
     "bevy_core_pipeline",
     "bevy_render",
+    "bevy_sprite_render",
     "bevy_asset",
     "bevy_text",
     "bevy_sprite",
     "bevy_winit",
+    "bevy_log",
     "x11",
     "wayland",
 ]
