@@ -8,15 +8,11 @@ pub mod texture;
 mod utils;
 
 use crate::text::{BillboardTextBounds, BillboardTextHandles};
-use bevy::asset::weak_handle;
+use bevy::camera::visibility::{add_visibility_class, VisibilityClass};
 use bevy::prelude::*;
 use bevy::render::extract_component::ExtractComponent;
-use bevy::render::view::{add_visibility_class, VisibilityClass};
 use bevy::sprite::Anchor;
 use bevy::text::{TextRoot, TextSpanAccess};
-
-const BILLBOARD_SHADER_HANDLE: Handle<Shader> =
-    weak_handle!("69c21ac3-19fa-4663-aef8-7b4e8f1a6e61");
 
 /// Marker component for a billboarded texture.
 ///

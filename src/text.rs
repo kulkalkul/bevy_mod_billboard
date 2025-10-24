@@ -1,17 +1,17 @@
 use crate::pipeline::{RenderBillboardImage, RenderBillboardMesh};
 use crate::utils::calculate_billboard_uniform;
 use crate::{BillboardDepth, BillboardLockAxis, BillboardText, BillboardTextNeedsRerender};
+use bevy::asset::RenderAssetUsages;
 use bevy::color::palettes;
+use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
-use bevy::render::mesh::{Indices, PrimitiveTopology};
-use bevy::render::render_asset::RenderAssetUsages;
 use bevy::render::sync_world::RenderEntity;
 use bevy::render::Extract;
 use bevy::sprite::Anchor;
 use bevy::text::{
     ComputedTextBlock, CosmicFontSystem, FontAtlasSets, PositionedGlyph, SwashCache, TextBounds,
-    TextLayoutInfo, TextPipeline, TextReader, YAxisOrientation,
+    TextLayoutInfo, TextPipeline, TextReader,
 };
 use smallvec::SmallVec;
 
@@ -30,7 +30,7 @@ pub struct BillboardTextHandles(pub SmallVec<[BillboardTextHandleGroup; 1]>);
 #[derive(Clone, Debug, Default, Reflect)]
 pub struct BillboardTextHandleGroup {
     mesh: Handle<Mesh>,
-    image: Handle<Image>,
+    image: AssetId<Image>,
 }
 
 pub fn extract_billboard_text(
@@ -70,7 +70,7 @@ pub fn extract_billboard_text(
                         id: handle_group.mesh.id(),
                     },
                     RenderBillboardImage {
-                        id: handle_group.image.id(),
+                        id: handle_group.image,
                     },
                     RenderBillboard {
                         depth,
@@ -147,7 +147,6 @@ pub(crate) fn update_billboard_text_layout(
                 &mut font_atlas_set_storage,
                 &mut texture_atlases,
                 &mut images,
-                YAxisOrientation::BottomToTop,
                 computed.as_mut(),
                 &mut font_system,
                 &mut swash_cache,
@@ -180,15 +179,15 @@ pub(crate) fn update_billboard_text_layout(
                 // TODO: Maybe with clever caching, could be possible to get rid of or_insert_with,
                 // TODO: though I don't know how much of a gain it would be. Just keeping this as a note.
                 let entry = textures
-                    .entry(glyph.atlas_info.texture.clone_weak())
+                    .entry(glyph.atlas_info.texture.clone())
                     .or_insert_with(|| {
                         (
                             Vec::with_capacity(length),
                             (
                                 texture_atlases
-                                    .get(&glyph.atlas_info.texture_atlas)
+                                    .get(glyph.atlas_info.texture_atlas)
                                     .expect("Atlas should exist"),
-                                glyph.atlas_info.texture.clone_weak(),
+                                glyph.atlas_info.texture.clone(),
                             ),
                         )
                     });
@@ -216,7 +215,7 @@ pub(crate) fn update_billboard_text_layout(
                 } in glyphs
                 {
                     let index = positions.len() as u32;
-                    let position = position + alignment_translation;
+                    let position = (position + alignment_translation) * Vec2::new(1.0, -1.0);
 
                     let half_size = size / 2.0;
                     let top_left = position - half_size;

@@ -1,6 +1,7 @@
 use bevy::{
+    camera::visibility::ViewVisibility,
     ecs::system::{Commands, Local, Query},
-    render::{sync_world::RenderEntity, view::ViewVisibility, Extract},
+    render::{sync_world::RenderEntity, Extract},
     transform::components::{GlobalTransform, Transform},
 };
 

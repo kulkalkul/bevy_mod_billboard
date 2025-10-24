@@ -14,14 +14,13 @@ fn main() {
 const TEXT_SCALE: Vec3 = Vec3::splat(0.0085);
 
 fn setup_billboard(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let text_font =
-        TextFont::from_font(asset_server.load("FiraSans-Regular.ttf")).with_font_size(60.0);
+    let text_font = TextFont::from(asset_server.load("FiraSans-Regular.ttf")).with_font_size(60.0);
 
     commands.spawn((
         BillboardText::new("depth enabled"),
         text_font.clone(),
         TextColor(Color::WHITE),
-        TextLayout::new_with_justify(JustifyText::Center),
+        TextLayout::new_with_justify(Justify::Center),
         Transform::from_xyz(0.0, 0.5, 0.0).with_scale(TEXT_SCALE),
     ));
 
@@ -30,7 +29,7 @@ fn setup_billboard(mut commands: Commands, asset_server: Res<AssetServer>) {
         BillboardDepth(false),
         text_font.clone(),
         TextColor(Color::WHITE),
-        TextLayout::new_with_justify(JustifyText::Center),
+        TextLayout::new_with_justify(Justify::Center),
         Transform::from_xyz(0.0, -0.5, 0.0).with_scale(TEXT_SCALE),
     ));
 }

@@ -6,7 +6,7 @@ use bevy_mod_billboard::prelude::*;
 fn text_binding_compatible_with_ui() {
     fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
         let fira_sans_regular_handle = asset_server.load("FiraSans-Regular.ttf");
-        let text_font = TextFont::from_font(fira_sans_regular_handle).with_font_size(60.0);
+        let text_font = TextFont::from(fira_sans_regular_handle).with_font_size(60.0);
 
         commands.spawn(Camera3d::default());
 

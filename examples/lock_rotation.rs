@@ -12,13 +12,12 @@ fn main() {
 }
 
 fn setup_billboard(mut commands: Commands, asset_server: Res<AssetServer>) {
-    let text_font =
-        TextFont::from_font(asset_server.load("FiraSans-Regular.ttf")).with_font_size(60.0);
+    let text_font = TextFont::from(asset_server.load("FiraSans-Regular.ttf")).with_font_size(60.0);
 
     commands
         .spawn((
             BillboardText::default(),
-            TextLayout::new_with_justify(JustifyText::Center),
+            TextLayout::new_with_justify(Justify::Center),
             Transform::from_scale(Vec3::splat(0.0085)).looking_at(Vec3::splat(5.0), Vec3::Y),
             BillboardLockAxis::from_lock_rotation(true),
         ))

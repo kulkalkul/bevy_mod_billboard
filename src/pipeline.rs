@@ -1,23 +1,22 @@
 use crate::text::RenderBillboard;
-use crate::{Billboard, BILLBOARD_SHADER_HANDLE};
-use bevy::asset::AssetId;
+use crate::Billboard;
+use bevy::asset::{load_embedded_asset, AssetId, AssetServer, Handle};
 use bevy::core_pipeline::core_3d::Transparent3d;
 use bevy::ecs::query::ROQueryItem;
 use bevy::ecs::system::lifetimeless::{Read, SRes};
-use bevy::ecs::system::{SystemParamItem, SystemState};
+use bevy::ecs::system::SystemParamItem;
 use bevy::image::BevyDefault;
 use bevy::log::error;
 use bevy::math::Mat4;
+use bevy::mesh::{MeshVertexBufferLayoutRef, PrimitiveTopology};
 use bevy::platform::collections::HashMap;
 use bevy::prelude::{
-    default, AssetEvent, Commands, Component, Entity, FromWorld, Image, Mesh, Msaa, Query, Res,
-    ResMut, Resource, With, World,
+    default, AssetEvent, Commands, Component, Entity, Image, Mesh, Msaa, Query, Res, ResMut,
+    Resource, With,
 };
 use bevy::render::extract_component::{ComponentUniforms, DynamicUniformIndex};
 use bevy::render::mesh::allocator::MeshAllocator;
-use bevy::render::mesh::{
-    MeshVertexBufferLayoutRef, PrimitiveTopology, RenderMesh, RenderMeshBufferInfo,
-};
+use bevy::render::mesh::{RenderMesh, RenderMeshBufferInfo};
 use bevy::render::render_asset::RenderAssets;
 use bevy::render::render_phase::{
     DrawFunctions, PhaseItemExtraIndex, RenderCommand, RenderCommandResult, SetItemPipeline,
@@ -36,7 +35,8 @@ use bevy::render::texture::GpuImage;
 use bevy::render::view::{
     ExtractedView, RenderVisibleEntities, ViewTarget, ViewUniform, ViewUniformOffset, ViewUniforms,
 };
-use bevy::sprite::SpriteAssetEvents;
+use bevy::shader::Shader;
+use bevy::sprite_render::SpriteAssetEvents;
 
 #[derive(Clone, Copy, ShaderType, Component)]
 pub struct BillboardUniform {
@@ -271,70 +271,73 @@ pub struct BillboardPipeline {
     view_layout: BindGroupLayout,
     billboard_layout: BindGroupLayout,
     texture_layout: BindGroupLayout,
+    shader: Handle<Shader>,
 }
 
-impl FromWorld for BillboardPipeline {
-    fn from_world(world: &mut World) -> Self {
-        let mut system_state: SystemState<(Res<RenderDevice>,)> = SystemState::new(world);
+pub(crate) fn init_billboard_pipeline(
+    mut commands: Commands,
+    render_device: Res<RenderDevice>,
+    assets: Res<AssetServer>,
+) {
+    let view_layout = render_device.create_bind_group_layout(
+        "billboard_view_layout",
+        &[BindGroupLayoutEntry {
+            binding: 0,
+            visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
+            ty: BindingType::Buffer {
+                ty: BufferBindingType::Uniform,
+                has_dynamic_offset: true,
+                min_binding_size: Some(ViewUniform::min_size()),
+            },
+            count: None,
+        }],
+    );
 
-        let (render_device,) = system_state.get(world);
+    let billboard_layout = render_device.create_bind_group_layout(
+        "billboard_layout",
+        &[BindGroupLayoutEntry {
+            binding: 0,
+            visibility: ShaderStages::VERTEX,
+            ty: BindingType::Buffer {
+                ty: BufferBindingType::Uniform,
+                has_dynamic_offset: true,
+                min_binding_size: Some(BillboardUniform::min_size()),
+            },
+            count: None,
+        }],
+    );
 
-        let view_layout = render_device.create_bind_group_layout(
-            "billboard_view_layout",
-            &[BindGroupLayoutEntry {
+    let texture_layout = render_device.create_bind_group_layout(
+        "billboard_texture_layout",
+        &[
+            BindGroupLayoutEntry {
                 binding: 0,
-                visibility: ShaderStages::VERTEX | ShaderStages::FRAGMENT,
-                ty: BindingType::Buffer {
-                    ty: BufferBindingType::Uniform,
-                    has_dynamic_offset: true,
-                    min_binding_size: Some(ViewUniform::min_size()),
+                visibility: ShaderStages::FRAGMENT,
+                ty: BindingType::Texture {
+                    multisampled: false,
+                    sample_type: TextureSampleType::Float { filterable: true },
+                    view_dimension: TextureViewDimension::D2,
                 },
                 count: None,
-            }],
-        );
-
-        let billboard_layout = render_device.create_bind_group_layout(
-            "billboard_layout",
-            &[BindGroupLayoutEntry {
-                binding: 0,
-                visibility: ShaderStages::VERTEX,
-                ty: BindingType::Buffer {
-                    ty: BufferBindingType::Uniform,
-                    has_dynamic_offset: true,
-                    min_binding_size: Some(BillboardUniform::min_size()),
-                },
+            },
+            BindGroupLayoutEntry {
+                binding: 1,
+                visibility: ShaderStages::FRAGMENT,
+                ty: BindingType::Sampler(SamplerBindingType::Filtering),
                 count: None,
-            }],
-        );
+            },
+        ],
+    );
 
-        let texture_layout = render_device.create_bind_group_layout(
-            "billboard_texture_layout",
-            &[
-                BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: ShaderStages::FRAGMENT,
-                    ty: BindingType::Texture {
-                        multisampled: false,
-                        sample_type: TextureSampleType::Float { filterable: true },
-                        view_dimension: TextureViewDimension::D2,
-                    },
-                    count: None,
-                },
-                BindGroupLayoutEntry {
-                    binding: 1,
-                    visibility: ShaderStages::FRAGMENT,
-                    ty: BindingType::Sampler(SamplerBindingType::Filtering),
-                    count: None,
-                },
-            ],
-        );
+    let shader = load_embedded_asset!(assets.as_ref(), "shader/billboard.wgsl");
 
-        Self {
-            view_layout,
-            billboard_layout,
-            texture_layout,
-        }
-    }
+    let pipeline = BillboardPipeline {
+        view_layout,
+        billboard_layout,
+        texture_layout,
+        shader,
+    };
+    commands.insert_resource(pipeline);
 }
 
 impl SpecializedMeshPipeline for BillboardPipeline {
@@ -385,14 +388,14 @@ impl SpecializedMeshPipeline for BillboardPipeline {
                 self.texture_layout.clone(),
             ],
             vertex: VertexState {
-                shader: BILLBOARD_SHADER_HANDLE,
-                entry_point: "vertex".into(),
+                shader: self.shader.clone(),
+                entry_point: None,
                 buffers: vec![vertex_buffer_layout],
                 shader_defs: shader_defs.clone(),
             },
             fragment: Some(FragmentState {
-                shader: BILLBOARD_SHADER_HANDLE,
-                entry_point: "fragment".into(),
+                shader: self.shader.clone(),
+                entry_point: None,
                 shader_defs,
                 targets: vec![Some(ColorTargetState {
                     format: if key.contains(BillboardPipelineKey::HDR) {
@@ -450,8 +453,8 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardViewBindGroup<
 
     fn render<'w>(
         _item: &Transparent3d,
-        (view_uniform, billboard_mesh_bind_group): ROQueryItem<'w, Self::ViewQuery>,
-        _item_query: Option<ROQueryItem<'w, Self::ItemQuery>>,
+        (view_uniform, billboard_mesh_bind_group): ROQueryItem<'w, '_, Self::ViewQuery>,
+        _item_query: Option<ROQueryItem<'w, '_, Self::ItemQuery>>,
         _param: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
@@ -469,8 +472,8 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardBindGroup<I> {
 
     fn render<'w>(
         _item: &Transparent3d,
-        _view: ROQueryItem<'w, Self::ViewQuery>,
-        billboard_index: Option<ROQueryItem<'w, Self::ItemQuery>>,
+        _view: ROQueryItem<'w, '_, Self::ViewQuery>,
+        billboard_index: Option<ROQueryItem<'w, '_, Self::ItemQuery>>,
         billboard_bind_group: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
@@ -494,8 +497,8 @@ impl<const I: usize> RenderCommand<Transparent3d> for SetBillboardTextureBindGro
 
     fn render<'w>(
         _item: &Transparent3d,
-        _view: ROQueryItem<'w, Self::ViewQuery>,
-        billboard_texture: Option<ROQueryItem<'w, Self::ItemQuery>>,
+        _view: ROQueryItem<'w, '_, Self::ViewQuery>,
+        billboard_texture: Option<ROQueryItem<'w, '_, Self::ItemQuery>>,
         images: SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
@@ -520,8 +523,8 @@ impl RenderCommand<Transparent3d> for DrawBillboardMesh {
 
     fn render<'w>(
         _item: &Transparent3d,
-        _view: ROQueryItem<'w, Self::ViewQuery>,
-        mesh: Option<ROQueryItem<'w, Self::ItemQuery>>,
+        _view: ROQueryItem<'w, '_, Self::ViewQuery>,
+        mesh: Option<ROQueryItem<'w, '_, Self::ItemQuery>>,
         (meshes, mesh_allocator): SystemParamItem<'w, '_, Self::Param>,
         pass: &mut TrackedRenderPass<'w>,
     ) -> RenderCommandResult {
