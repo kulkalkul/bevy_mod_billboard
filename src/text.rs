@@ -10,7 +10,7 @@ use bevy::render::sync_world::RenderEntity;
 use bevy::render::Extract;
 use bevy::sprite::Anchor;
 use bevy::text::{
-    ComputedTextBlock, CosmicFontSystem, FontAtlasSets, PositionedGlyph, SwashCache, TextBounds,
+    ComputedTextBlock, CosmicFontSystem, FontAtlasSet, PositionedGlyph, SwashCache, TextBounds,
     TextLayoutInfo, TextPipeline, TextReader,
 };
 use smallvec::SmallVec;
@@ -91,7 +91,7 @@ pub(crate) fn update_billboard_text_layout(
     mut meshes: ResMut<Assets<Mesh>>,
     fonts: Res<Assets<Font>>,
     mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
-    mut font_atlas_set_storage: ResMut<FontAtlasSets>,
+    mut font_atlas_set: ResMut<FontAtlasSet>,
     mut text_pipeline: ResMut<TextPipeline>,
     mut font_system: ResMut<CosmicFontSystem>,
     mut swash_cache: ResMut<SwashCache>,
@@ -108,6 +108,7 @@ pub(crate) fn update_billboard_text_layout(
         ),
         With<BillboardText>,
     >,
+    mut text_font_query: Query<&TextFont>,
     mut text_reader: TextReader<BillboardText>,
     mut commands: Commands,
 ) {
@@ -137,29 +138,46 @@ pub(crate) fn update_billboard_text_layout(
                 bounds.0
             };
 
-            match text_pipeline.queue_text(
-                &mut info,
+            match text_pipeline.update_buffer(
                 &fonts,
                 text_reader.iter(entity),
-                SCALE_FACTOR,
-                &layout,
+                layout.linebreak,
+                layout.justify,
                 text_bounds,
-                &mut font_atlas_set_storage,
-                &mut texture_atlases,
-                &mut images,
+                SCALE_FACTOR,
                 computed.as_mut(),
                 &mut font_system,
-                &mut swash_cache,
             ) {
                 Err(TextError::NoSuchFont) => {
                     error!("Missing font (could still be loading)");
                     queue.insert(entity);
                     continue;
                 }
-                Err(err @ TextError::FailedToAddGlyph(_)) => {
+                Err(err) => {
                     panic!("Fatal error when processing text: {err}.");
                 }
-                Err(err @ TextError::FailedToGetGlyphImage(_)) => {
+                Ok(_) => (),
+            };
+
+            match text_pipeline.update_text_layout_info(
+                &mut info,
+                text_font_query.reborrow(),
+                SCALE_FACTOR,
+                &mut font_atlas_set,
+                &mut texture_atlases,
+                &mut images,
+                computed.as_mut(),
+                &mut font_system,
+                &mut swash_cache,
+                text_bounds,
+                layout.justify,
+            ) {
+                Err(TextError::NoSuchFont) => {
+                    error!("Missing font (could still be loading)");
+                    queue.insert(entity);
+                    continue;
+                }
+                Err(err) => {
                     panic!("Fatal error when processing text: {err}.");
                 }
                 Ok(_) => (),

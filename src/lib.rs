@@ -12,7 +12,7 @@ use bevy::camera::visibility::{add_visibility_class, VisibilityClass};
 use bevy::prelude::*;
 use bevy::render::extract_component::ExtractComponent;
 use bevy::sprite::Anchor;
-use bevy::text::{TextRoot, TextSpanAccess};
+use bevy::text::{LineHeight, TextRoot, TextSpanAccess};
 
 /// Marker component for a billboarded texture.
 ///
@@ -42,6 +42,7 @@ pub struct BillboardTexture(pub Handle<Image>);
     TextLayout,
     TextFont,
     TextColor,
+    LineHeight,
     Anchor,
     Transform,
     Visibility
