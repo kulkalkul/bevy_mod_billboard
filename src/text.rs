@@ -10,8 +10,8 @@ use bevy::render::sync_world::RenderEntity;
 use bevy::render::Extract;
 use bevy::sprite::Anchor;
 use bevy::text::{
-    ComputedTextBlock, CosmicFontSystem, FontAtlasSet, PositionedGlyph, SwashCache, TextBounds,
-    TextLayoutInfo, TextPipeline, TextReader,
+    ComputedTextBlock, CosmicFontSystem, FontAtlasSet, FontHinting, PositionedGlyph, SwashCache,
+    TextBounds, TextLayoutInfo, TextPipeline, TextReader,
 };
 use smallvec::SmallVec;
 
@@ -108,7 +108,6 @@ pub(crate) fn update_billboard_text_layout(
         ),
         With<BillboardText>,
     >,
-    mut text_font_query: Query<&TextFont>,
     mut text_reader: TextReader<BillboardText>,
     mut commands: Commands,
 ) {
@@ -147,6 +146,7 @@ pub(crate) fn update_billboard_text_layout(
                 SCALE_FACTOR,
                 computed.as_mut(),
                 &mut font_system,
+                FontHinting::default(),
             ) {
                 Err(TextError::NoSuchFont) => {
                     error!("Missing font (could still be loading)");
@@ -161,8 +161,6 @@ pub(crate) fn update_billboard_text_layout(
 
             match text_pipeline.update_text_layout_info(
                 &mut info,
-                text_font_query.reborrow(),
-                SCALE_FACTOR,
                 &mut font_atlas_set,
                 &mut texture_atlases,
                 &mut images,
