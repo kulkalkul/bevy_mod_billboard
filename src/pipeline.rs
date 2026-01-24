@@ -444,7 +444,7 @@ impl SpecializedMeshPipeline for BillboardPipeline {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
-            push_constant_ranges: vec![],
+            immediate_size: 0,
             zero_initialize_workgroup_memory: false,
         })
     }
