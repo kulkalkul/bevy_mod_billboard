@@ -111,7 +111,7 @@ pub(crate) fn update_billboard_text_layout(
     mut text_reader: TextReader<BillboardText>,
     mut commands: Commands,
 ) {
-    const SCALE_FACTOR: f64 = 1.0;
+    const SCALE_FACTOR: f32 = 1.0;
 
     for (
         entity,
@@ -128,7 +128,7 @@ pub(crate) fn update_billboard_text_layout(
             || layout.is_changed()
             || bounds.is_changed()
             || anchor.is_changed()
-            || computed.needs_rerender()
+            || computed.needs_rerender(false, false)
             || queue.remove(&entity)
         {
             let text_bounds = if layout.linebreak == LineBreak::NoWrap {
@@ -147,6 +147,8 @@ pub(crate) fn update_billboard_text_layout(
                 computed.as_mut(),
                 &mut font_system,
                 FontHinting::default(),
+                Vec2::ZERO,
+                0.0,
             ) {
                 Err(TextError::NoSuchFont) => {
                     error!("Missing font (could still be loading)");
