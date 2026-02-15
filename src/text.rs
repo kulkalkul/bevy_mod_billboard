@@ -10,7 +10,7 @@ use bevy::render::sync_world::RenderEntity;
 use bevy::render::Extract;
 use bevy::sprite::Anchor;
 use bevy::text::{
-    ComputedTextBlock, CosmicFontSystem, FontAtlasSet, FontHinting, PositionedGlyph, SwashCache,
+    ComputedTextBlock, FontAtlasSet, FontCx, FontHinting, LayoutCx, PositionedGlyph, ScaleCx,
     TextBounds, TextLayoutInfo, TextPipeline, TextReader,
 };
 use smallvec::SmallVec;
@@ -93,8 +93,9 @@ pub(crate) fn update_billboard_text_layout(
     mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     mut font_atlas_set: ResMut<FontAtlasSet>,
     mut text_pipeline: ResMut<TextPipeline>,
-    mut font_system: ResMut<CosmicFontSystem>,
-    mut swash_cache: ResMut<SwashCache>,
+    mut font_system: ResMut<FontCx>,
+    mut layout_cx: ResMut<LayoutCx>,
+    mut scale_cx: ResMut<ScaleCx>,
     mut text_query: Query<
         (
             Entity,
@@ -146,6 +147,7 @@ pub(crate) fn update_billboard_text_layout(
                 SCALE_FACTOR,
                 computed.as_mut(),
                 &mut font_system,
+                &mut layout_cx,
                 FontHinting::default(),
                 Vec2::ZERO,
                 0.0,
@@ -167,10 +169,10 @@ pub(crate) fn update_billboard_text_layout(
                 &mut texture_atlases,
                 &mut images,
                 computed.as_mut(),
-                &mut font_system,
-                &mut swash_cache,
+                &mut scale_cx,
                 text_bounds,
                 layout.justify,
+                FontHinting::default(),
             ) {
                 Err(TextError::NoSuchFont) => {
                     error!("Missing font (could still be loading)");
