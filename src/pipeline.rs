@@ -1,7 +1,7 @@
 use crate::text::RenderBillboard;
 use crate::Billboard;
 use bevy::asset::{load_embedded_asset, AssetId, AssetServer, Handle};
-use bevy::core_pipeline::core_3d::Transparent3d;
+use bevy::core_pipeline::core_3d::{Transparent3d, TransparentSortingInfo3d};
 use bevy::ecs::query::ROQueryItem;
 use bevy::ecs::system::lifetimeless::{Read, SRes};
 use bevy::ecs::system::SystemParamItem;
@@ -199,7 +199,10 @@ pub fn queue_billboard_texture(
 
         let rangefinder = view.rangefinder3d();
 
-        for visible_entity in visible_entities.iter::<Billboard>() {
+        let Some(billboard_entities) = visible_entities.get::<Billboard>() else {
+            continue;
+        };
+        for visible_entity in &billboard_entities.entities {
             let Ok((uniform, mesh, image, billboard)) = billboards.get(visible_entity.0) else {
                 continue;
             };
@@ -263,6 +266,10 @@ pub fn queue_billboard_texture(
             });
 
             transparent_phase.add(Transparent3d {
+                sorting_info: TransparentSortingInfo3d::Sorted {
+                    mesh_center: uniform.transform.w_axis.truncate(),
+                    depth_bias: 0.0,
+                },
                 pipeline: pipeline_id,
                 entity: *visible_entity,
                 draw_function: draw_transparent_billboard,

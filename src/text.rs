@@ -90,7 +90,6 @@ pub(crate) fn update_billboard_text_layout(
     mut images: ResMut<Assets<Image>>,
     mut meshes: ResMut<Assets<Mesh>>,
     fonts: Res<Assets<Font>>,
-    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     mut font_atlas_set: ResMut<FontAtlasSet>,
     mut text_pipeline: ResMut<TextPipeline>,
     mut font_system: ResMut<FontCx>,
@@ -148,7 +147,6 @@ pub(crate) fn update_billboard_text_layout(
                 computed.as_mut(),
                 &mut font_system,
                 &mut layout_cx,
-                FontHinting::default(),
                 Vec2::ZERO,
                 0.0,
             ) {
@@ -166,7 +164,6 @@ pub(crate) fn update_billboard_text_layout(
             match text_pipeline.update_text_layout_info(
                 &mut info,
                 &mut font_atlas_set,
-                &mut texture_atlases,
                 &mut images,
                 computed.as_mut(),
                 &mut scale_cx,
@@ -193,31 +190,26 @@ pub(crate) fn update_billboard_text_layout(
             let alignment_translation = info.size * text_anchor;
 
             let length = info.glyphs.len();
-            let mut textures = HashMap::new();
+            let mut textures: HashMap<AssetId<Image>, Vec<PositionedGlyph>> = HashMap::new();
 
             for glyph in &info.glyphs {
-                // TODO: Maybe with clever caching, could be possible to get rid of or_insert_with,
-                // TODO: though I don't know how much of a gain it would be. Just keeping this as a note.
-                let entry = textures
-                    .entry(glyph.atlas_info.texture.clone())
-                    .or_insert_with(|| {
-                        (
-                            Vec::with_capacity(length),
-                            (
-                                texture_atlases
-                                    .get(glyph.atlas_info.texture_atlas)
-                                    .expect("Atlas should exist"),
-                                glyph.atlas_info.texture.clone(),
-                            ),
-                        )
-                    });
-
-                entry.0.push(glyph.clone());
+                textures
+                    .entry(glyph.atlas_info.texture)
+                    .or_insert_with(|| Vec::with_capacity(length))
+                    .push(glyph.clone());
             }
 
             handles.clear();
 
-            for (glyphs, (atlas, texture)) in textures.into_values() {
+            for (texture, glyphs) in textures {
+                let Some(atlas_image) = images.get(texture) else {
+                    continue;
+                };
+                let atlas_size = Vec2::new(
+                    atlas_image.width() as f32,
+                    atlas_image.height() as f32,
+                );
+
                 let mut positions = Vec::with_capacity(info.glyphs.len() * 4);
                 let mut uvs = Vec::with_capacity(info.glyphs.len() * 4);
                 let mut colors = Vec::with_capacity(info.glyphs.len() * 4);
@@ -228,7 +220,6 @@ pub(crate) fn update_billboard_text_layout(
 
                 for PositionedGlyph {
                     position,
-                    size,
                     atlas_info,
                     span_index,
                     ..
@@ -237,6 +228,7 @@ pub(crate) fn update_billboard_text_layout(
                     let index = positions.len() as u32;
                     let position = (position + alignment_translation) * Vec2::new(1.0, -1.0);
 
+                    let size = atlas_info.rect.size();
                     let half_size = size / 2.0;
                     let top_left = position - half_size;
                     let bottom_right = position + half_size;
@@ -248,10 +240,8 @@ pub(crate) fn update_billboard_text_layout(
                         [bottom_right.x, top_left.y, 0.0],
                     ]);
 
-                    let URect { min, max } = atlas.textures[atlas_info.location.glyph_index];
-                    let atlas_size = atlas.size.as_vec2();
-                    let min = min.as_vec2() / atlas_size;
-                    let max = max.as_vec2() / atlas_size;
+                    let min = atlas_info.rect.min / atlas_size;
+                    let max = atlas_info.rect.max / atlas_size;
 
                     uvs.extend([
                         [min.x, max.y],
