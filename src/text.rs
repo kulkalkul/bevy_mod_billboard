@@ -27,7 +27,7 @@ pub struct BillboardTextBounds(pub TextBounds);
 #[reflect(Component)]
 pub struct BillboardTextHandles(pub SmallVec<[BillboardTextHandleGroup; 1]>);
 
-#[derive(Clone, Debug, Default, Reflect)]
+#[derive(Clone, Debug, Reflect)]
 pub struct BillboardTextHandleGroup {
     mesh: Handle<Mesh>,
     image: AssetId<Image>,

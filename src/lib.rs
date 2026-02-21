@@ -17,9 +17,9 @@ use bevy::text::{LineHeight, TextRoot, TextSpanAccess};
 /// Marker component for a billboarded texture.
 ///
 /// Additionally insert a [`BillboardMesh`] to function.
-#[derive(Clone, Component, Default, Reflect)]
+#[derive(Clone, Component, Reflect)]
 #[reflect(Component)]
-#[require(Billboard, BillboardMesh, Transform, Visibility)]
+#[require(Billboard, Transform, Visibility)]
 pub struct BillboardTexture(pub Handle<Image>);
 
 /// Marker component for billboarded text.
@@ -82,7 +82,7 @@ impl From<String> for BillboardText {
 #[component(storage = "SparseSet")]
 struct BillboardTextNeedsRerender;
 
-#[derive(Clone, Component, Reflect, Default)]
+#[derive(Clone, Component, Reflect)]
 #[reflect(Component)]
 pub struct BillboardMesh(pub Handle<Mesh>);
 
