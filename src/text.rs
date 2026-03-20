@@ -221,7 +221,7 @@ pub(crate) fn update_billboard_text_layout(
                 for PositionedGlyph {
                     position,
                     atlas_info,
-                    span_index,
+                    section_index,
                     ..
                 } in glyphs
                 {
@@ -250,13 +250,13 @@ pub(crate) fn update_billboard_text_layout(
                         [max.x, max.y],
                     ]);
 
-                    if span_index != current_span {
+                    if section_index != current_span {
                         color = text_reader
-                            .get_color(entity, span_index)
+                            .get_color(entity, section_index)
                             .unwrap()
                             .to_linear()
                             .to_f32_array();
-                        current_span = span_index;
+                        current_span = section_index;
                     }
 
                     colors.extend([color, color, color, color]);
