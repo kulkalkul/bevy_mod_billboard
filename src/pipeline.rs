@@ -202,7 +202,7 @@ pub fn queue_billboard_texture(
         let Some(billboard_entities) = visible_entities.get::<Billboard>() else {
             continue;
         };
-        for visible_entity in &billboard_entities.entities {
+        for visible_entity in &billboard_entities.entities_cpu_culling {
             let Ok((uniform, mesh, image, billboard)) = billboards.get(visible_entity.0) else {
                 continue;
             };
