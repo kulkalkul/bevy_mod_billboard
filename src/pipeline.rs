@@ -441,8 +441,8 @@ impl SpecializedMeshPipeline for BillboardPipeline {
             },
             depth_stencil: Some(DepthStencilState {
                 format: TextureFormat::Depth32Float,
-                depth_write_enabled: false,
-                depth_compare,
+                depth_write_enabled: Some(false),
+                depth_compare: Some(depth_compare),
                 stencil: default(),
                 bias: default(),
             }),
