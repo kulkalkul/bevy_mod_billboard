@@ -227,7 +227,7 @@ pub fn queue_billboard_texture(
                 key |= BillboardPipelineKey::LOCK_ROTATION;
             }
 
-            if view.hdr {
+            if view.target_format == bevy::render::view::ViewTarget::TEXTURE_FORMAT_HDR {
                 key |= BillboardPipelineKey::HDR;
             }
 
