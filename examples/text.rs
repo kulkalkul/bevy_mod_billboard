@@ -17,7 +17,7 @@ fn setup_billboard(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands
         .spawn((
             BillboardText::default(),
-            TextLayout::new_with_justify(Justify::Left),
+            TextLayout::justify(Justify::Left),
             Transform::from_scale(Vec3::splat(0.0085)),
         ))
         .with_child((
