@@ -205,10 +205,7 @@ pub(crate) fn update_billboard_text_layout(
                 let Some(atlas_image) = images.get(texture) else {
                     continue;
                 };
-                let atlas_size = Vec2::new(
-                    atlas_image.width() as f32,
-                    atlas_image.height() as f32,
-                );
+                let atlas_size = Vec2::new(atlas_image.width() as f32, atlas_image.height() as f32);
 
                 let mut positions = Vec::with_capacity(info.glyphs.len() * 4);
                 let mut uvs = Vec::with_capacity(info.glyphs.len() * 4);

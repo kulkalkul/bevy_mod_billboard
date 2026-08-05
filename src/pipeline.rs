@@ -5,7 +5,6 @@ use bevy::core_pipeline::core_3d::{Transparent3d, TransparentSortingInfo3d};
 use bevy::ecs::query::ROQueryItem;
 use bevy::ecs::system::lifetimeless::{Read, SRes};
 use bevy::ecs::system::SystemParamItem;
-use bevy::image::BevyDefault;
 use bevy::log::error;
 use bevy::math::Mat4;
 use bevy::mesh::{MeshVertexBufferLayoutRef, PrimitiveTopology};
@@ -34,7 +33,7 @@ use bevy::render::render_resource::{
 use bevy::render::renderer::RenderDevice;
 use bevy::render::texture::GpuImage;
 use bevy::render::view::{
-    ExtractedView, RenderVisibleEntities, ViewTarget, ViewUniform, ViewUniformOffset, ViewUniforms,
+    ExtractedView, RenderVisibleEntities, ViewUniform, ViewUniformOffset, ViewUniforms,
 };
 use bevy::shader::Shader;
 use bevy::sprite_render::SpriteAssetEvents;
@@ -140,7 +139,8 @@ pub fn prepare_billboard_bind_group(
         return;
     };
 
-    let billboard_layout = pipeline_cache.get_bind_group_layout(&billboard_pipeline.billboard_layout);
+    let billboard_layout =
+        pipeline_cache.get_bind_group_layout(&billboard_pipeline.billboard_layout);
 
     commands.insert_resource(BillboardBindGroup {
         value: render_device.create_bind_group(
@@ -227,7 +227,7 @@ pub fn queue_billboard_texture(
                 key |= BillboardPipelineKey::LOCK_ROTATION;
             }
 
-            if view.target_format == bevy::render::view::ViewTarget::TEXTURE_FORMAT_HDR {
+            if view.target_format == TextureFormat::Rgba16Float {
                 key |= BillboardPipelineKey::HDR;
             }
 
@@ -265,7 +265,7 @@ pub fn queue_billboard_texture(
                 )
             });
 
-            transparent_phase.add(Transparent3d {
+            transparent_phase.add_transient(Transparent3d {
                 sorting_info: TransparentSortingInfo3d::Sorted {
                     mesh_center: uniform.transform.w_axis.truncate(),
                     depth_bias: 0.0,
@@ -411,9 +411,9 @@ impl SpecializedMeshPipeline for BillboardPipeline {
                 shader_defs,
                 targets: vec![Some(ColorTargetState {
                     format: if key.contains(BillboardPipelineKey::HDR) {
-                        ViewTarget::TEXTURE_FORMAT_HDR
+                        TextureFormat::Rgba16Float
                     } else {
-                        TextureFormat::bevy_default()
+                        TextureFormat::Rgba8UnormSrgb
                     },
                     blend: Some(BlendState {
                         color: BlendComponent {
