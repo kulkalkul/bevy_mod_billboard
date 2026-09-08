@@ -6,21 +6,17 @@ use bevy_mod_billboard::prelude::*;
 fn text_binding_compatible_with_ui() {
     fn setup_scene(mut commands: Commands, asset_server: Res<AssetServer>) {
         let fira_sans_regular_handle = asset_server.load("FiraSans-Regular.ttf");
+        let text_font = TextFont::from(fira_sans_regular_handle).with_font_size(60.0);
 
-        let style = TextStyle {
-            font: fira_sans_regular_handle.clone(),
-            font_size: 60.0,
-            color: Color::WHITE,
-        };
+        commands.spawn(Camera3d::default());
 
-        commands.spawn(Camera3dBundle::default());
+        commands.spawn((
+            BillboardText::new("a"),
+            text_font.clone(),
+            TextColor::from(Color::WHITE),
+        ));
 
-        commands.spawn(BillboardTextBundle {
-            text: Text::from_section("a", style.clone()),
-            ..default()
-        });
-
-        commands.spawn(TextBundle::from_section("b", style));
+        commands.spawn((Text::new("b"), text_font, TextColor::from(Color::WHITE)));
     }
 
     App::new()

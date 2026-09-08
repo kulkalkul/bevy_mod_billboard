@@ -40,39 +40,31 @@ App::new()
 
 Text:
 ```rs
-commands.spawn(BillboardTextBundle {
-    transform: Transform::from_translation(Vec3::new(0., 2., 0.))
-        .with_scale(Vec3::splat(0.0085)),
-    text: Text::from_sections([
-        TextSection {
-            value: "IMPORTANT".to_string(),
-            style: TextStyle {
-                font_size: 60.0,
-                font: fira_sans_regular_handle.clone(),
-                color: Color::ORANGE,
-            }
-        },
-        TextSection {
-            value: " text".to_string(),
-            style: TextStyle {
-                font_size: 60.0,
-                font: fira_sans_regular_handle.clone(),
-                color: Color::WHITE,
-            }
-        }
-    ]).with_alignment(TextAlignment::CENTER),
-    ..default()
-});
+commands
+    .spawn((
+        BillboardText::default(),
+        TextLayout::new_with_justify(Justify::Center),
+        Transform::from_scale(Vec3::splat(0.0085)),
+    ))
+    .with_child((
+        TextSpan::new("IMPORTANT"),
+        TextFont::from(fira_sans_regular_handle.clone()).with_font_size(60.0),
+        TextColor::from(Color::Srgba(palettes::css::ORANGE)),
+    ))
+    .with_child((
+        TextSpan::new(" text"),
+        TextFont::from(fira_sans_regular_handle.clone()).with_font_size(60.0),
+        TextColor::from(Color::WHITE),
+    ));
 ```
 
 Texture:
 ```rs
-commands.spawn(BillboardTextureBundle {
-    transform: Transform::from_translation(Vec3::new(0., 5., 0.)),
-    texture: BillboardTextureHandle(handle.clone()),
-    mesh: BillboardMeshHandle(meshes.add(Quad::new(Vec2::new(4.0, 4.0)).into()).into()),
-    ..default()
-});
+commands.spawn((
+    BillboardTexture(image_handle.clone()),
+    BillboardMesh(meshes.add(Rectangle::from_size(Vec2::splat(2.0)))),
+    Transform::from_xyz(0.0, 5.0, 0.0),
+));
 ```
 
 Full examples at [examples](examples).

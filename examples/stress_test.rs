@@ -39,17 +39,14 @@ struct Settings {
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut meshes: ResMut<Assets<Mesh>>) {
-    let image_handle: Handle<Image> = asset_server.load("rust-logo-256x256.png");
-    let billboard_texture = BillboardTextureHandle(image_handle);
-    let mesh_handle = meshes.add(Rectangle::from_size(Vec2::splat(1.0)));
-    let billboard_mesh = BillboardMeshHandle(mesh_handle);
-    let fira_sans_regular_handle = asset_server.load("FiraSans-Regular.ttf");
+    let billboard_texture = BillboardTexture(asset_server.load("rust-logo-256x256.png"));
+    let billboard_mesh = BillboardMesh(meshes.add(Rectangle::from_size(Vec2::splat(1.0))));
+    let text_font = TextFont::from(asset_server.load("FiraSans-Regular.ttf")).with_font_size(60.0);
 
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_translation(Vec3::new(0., 0., 50.))
-            .looking_at(Vec3::ZERO, Vec3::Y),
-        ..Default::default()
-    });
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(0., 0., 50.).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
 
     for x in -10..=10 {
         for y in -10..=10 {
@@ -57,31 +54,20 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut meshes: Res
                 let translation = Vec3::new(x as f32, y as f32, z as f32);
 
                 if std::env::args().any(|arg| arg == "text") {
-                    commands.spawn(BillboardTextBundle {
-                        transform: Transform {
-                            translation,
-                            rotation: Quat::IDENTITY,
-                            scale: Vec3::splat(0.0085),
-                        },
-                        text: Text::from_section(
-                            "STRESS",
-                            TextStyle {
-                                font_size: 60.0,
-                                font: fira_sans_regular_handle.clone(),
-                                color: Color::Srgba(palettes::css::ORANGE),
-                            },
-                        ),
-                        ..default()
-                    });
+                    commands.spawn((
+                        BillboardText::new("STRESS"),
+                        text_font.clone(),
+                        TextColor(Color::Srgba(palettes::css::ORANGE)),
+                        Transform::from_translation(translation).with_scale(Vec3::splat(0.0085)),
+                    ));
                 }
 
                 if std::env::args().any(|arg| arg == "texture") {
-                    commands.spawn(BillboardTextureBundle {
-                        texture: billboard_texture.clone(),
-                        mesh: billboard_mesh.clone(),
-                        transform: Transform::from_translation(translation),
-                        ..Default::default()
-                    });
+                    commands.spawn((
+                        billboard_texture.clone(),
+                        billboard_mesh.clone(),
+                        Transform::from_translation(translation),
+                    ));
                 }
             }
         }
@@ -95,7 +81,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>, mut meshes: Res
 
 fn recompute_billboards(
     mut text_query: Query<&mut Text>,
-    mut billboard_query: Query<&mut BillboardTextureHandle>,
+    mut billboard_query: Query<&mut BillboardTexture>,
     settings: Res<Settings>,
 ) {
     if settings.recompute_text {

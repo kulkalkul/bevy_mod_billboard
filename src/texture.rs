@@ -1,9 +1,7 @@
 use bevy::{
-    ecs::{
-        entity::Entity,
-        system::{Commands, Local, Query},
-    },
-    render::{view::ViewVisibility, Extract},
+    camera::visibility::ViewVisibility,
+    ecs::system::{Commands, Local, Query},
+    render::{sync_world::RenderEntity, Extract},
     transform::components::{GlobalTransform, Transform},
 };
 
@@ -11,7 +9,7 @@ use crate::{
     pipeline::{RenderBillboardImage, RenderBillboardMesh},
     text::RenderBillboard,
     utils::calculate_billboard_uniform,
-    BillboardDepth, BillboardLockAxis, BillboardMeshHandle, BillboardTextureHandle,
+    BillboardDepth, BillboardLockAxis, BillboardMesh, BillboardTexture,
 };
 
 pub fn extract_billboard_texture(
@@ -19,12 +17,12 @@ pub fn extract_billboard_texture(
     mut previous_len: Local<usize>,
     billboard_text_query: Extract<
         Query<(
-            Entity,
+            &RenderEntity,
             &ViewVisibility,
             &GlobalTransform,
             &Transform,
-            &BillboardMeshHandle,
-            &BillboardTextureHandle,
+            &BillboardMesh,
+            &BillboardTexture,
             &BillboardDepth,
             Option<&BillboardLockAxis>,
         )>,
@@ -33,7 +31,7 @@ pub fn extract_billboard_texture(
     let mut batch = Vec::with_capacity(*previous_len);
 
     for (
-        entity,
+        render_entity,
         visibility,
         global_transform,
         transform,
@@ -50,7 +48,7 @@ pub fn extract_billboard_texture(
         let uniform = calculate_billboard_uniform(global_transform, transform, lock_axis);
 
         batch.push((
-            entity,
+            render_entity.id(),
             (
                 uniform,
                 RenderBillboardMesh {
@@ -68,5 +66,5 @@ pub fn extract_billboard_texture(
     }
 
     *previous_len = batch.len();
-    commands.insert_or_spawn_batch(batch);
+    commands.insert_batch(batch);
 }

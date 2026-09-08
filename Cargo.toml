@@ -20,18 +20,24 @@ smallvec = "1.11.0"
 bitflags = "2.3"
 
 [dependencies.bevy]
-version = "0.14"
+version = "0.19"
 default-features = false
 features = [
     "bevy_core_pipeline",
     "bevy_render",
+    "bevy_sprite_render",
     "bevy_asset",
     "bevy_text",
     "bevy_sprite",
     "bevy_winit",
+    "bevy_log",
     "x11",
     "wayland",
 ]
 
 [dev-dependencies]
-bevy = "0.14"
+bevy = "0.19"
+
+# Remove expensive debug assertions due to <https://github.com/bevyengine/bevy/issues/14291>
+[profile.dev.package.wgpu-types]
+debug-assertions = false

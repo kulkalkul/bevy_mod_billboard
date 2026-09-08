@@ -45,11 +45,11 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     let vertex_position = vec4<f32>(-vertex.position.x, vertex.position.y, vertex.position.z, 1.0);
     let position = view.view_proj * billboard.model * vertex_position;
 #else
-    let camera_right = normalize(vec3<f32>(view.view_proj.x.x, view.view_proj.y.x, view.view_proj.z.x));
+    let camera_right = normalize(vec3<f32>(view.view_proj[0][0], view.view_proj[1][0], view.view_proj[2][0]));
 #ifdef LOCK_Y
     let camera_up = vec3<f32>(0.0, 1.0, 0.0);
 #else
-    let camera_up = normalize(vec3<f32>(view.view_proj.x.y, view.view_proj.y.y, view.view_proj.z.y));
+    let camera_up = normalize(vec3<f32>(view.view_proj[0][1], view.view_proj[1][1], view.view_proj[2][1]));
 #endif
 
     let world_space = camera_right * vertex.position.x + camera_up * vertex.position.y;

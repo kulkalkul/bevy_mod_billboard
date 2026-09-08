@@ -24,40 +24,27 @@ fn setup_billboard(
 
     commands
         .spawn((
-            PbrBundle {
-                mesh: meshes.add(Cuboid::default()),
-                material: materials.add(Color::Srgba(palettes::css::GRAY)),
-                transform: Transform::from_translation(Vec3::new(0.0, -2.0, 1.0)),
-                ..default()
-            },
             ParentCube,
+            Mesh3d(meshes.add(Cuboid::default())),
+            MeshMaterial3d(materials.add(Color::Srgba(palettes::css::GRAY))),
+            Transform::from_translation(Vec3::new(0.0, -2.0, 1.0)),
         ))
-        .with_children(|parent| {
-            parent.spawn(BillboardTextBundle {
-                transform: Transform::from_translation(Vec3::new(0., 1.0, 0.))
-                    .with_scale(Vec3::splat(0.0085)),
-                text: Text::from_section(
-                    "parented text",
-                    TextStyle {
-                        font_size: 60.0,
-                        font: fira_sans_regular_handle.clone(),
-                        color: Color::WHITE,
-                    },
-                )
-                .with_justify(JustifyText::Center),
-                ..default()
-            });
-        });
+        .with_child((
+            BillboardText::new("parented text"),
+            TextFont::from(fira_sans_regular_handle).with_font_size(60.0),
+            TextColor(Color::WHITE),
+            Transform::from_xyz(0.0, 1.0, 0.0).with_scale(Vec3::splat(0.0085)),
+            TextLayout::justify(Justify::Center),
+        ));
 }
 
 // Important bits are above, the code below is for camera, reference cube and rotation
 
 fn setup_scene(mut commands: Commands) {
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_translation(Vec3::new(5., 0., 0.))
-            .looking_at(Vec3::ZERO, Vec3::Y),
-        ..default()
-    });
+    commands.spawn((
+        Camera3d::default(),
+        Transform::from_xyz(5.0, 0.0, 0.0).looking_at(Vec3::ZERO, Vec3::Y),
+    ));
 }
 
 fn move_cube(
@@ -66,15 +53,15 @@ fn move_cube(
     mut direction: Local<bool>,
     time: Res<Time>,
 ) {
-    let mut parent_cube = parent_cube.single_mut();
+    let mut parent_cube = parent_cube.single_mut().unwrap();
 
     let direction_vec = if *direction { Vec3::Z } else { Vec3::NEG_Z };
 
-    parent_cube.translation += time.delta_seconds() * direction_vec;
-    *accumulated += time.delta_seconds();
+    parent_cube.translation += time.delta_secs() * direction_vec;
+    *accumulated += time.delta_secs();
 
     if *accumulated >= 2.0 {
         *direction = !*direction;
-        *accumulated = *accumulated - 2.0
+        *accumulated -= 2.0
     }
 }
