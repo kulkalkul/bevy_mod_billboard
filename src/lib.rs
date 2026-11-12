@@ -11,6 +11,7 @@ use crate::text::{BillboardTextBounds, BillboardTextHandles};
 use bevy::camera::visibility::{add_visibility_class, VisibilityClass};
 use bevy::prelude::*;
 use bevy::render::extract_component::ExtractComponent;
+use bevy::render::RenderApp;
 use bevy::sprite::Anchor;
 use bevy::text::{LetterSpacing, LineHeight, TextSection};
 
@@ -95,6 +96,7 @@ impl Default for BillboardDepth {
 }
 
 #[derive(Default, Clone, Copy, Component, ExtractComponent, Debug, Reflect)]
+#[extract_app(RenderApp)]
 #[require(BillboardDepth, VisibilityClass)]
 #[component(on_add = add_visibility_class::<Billboard>)]
 pub struct Billboard;

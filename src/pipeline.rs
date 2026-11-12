@@ -341,7 +341,7 @@ pub(crate) fn init_billboard_pipeline(mut commands: Commands, assets: Res<AssetS
         ],
     );
 
-    let shader = load_embedded_asset!(assets.as_ref(), "shader/billboard.wgsl");
+    let shader = load_embedded_asset!(assets.as_ref(), "shader/billboard.wesl");
 
     let pipeline = BillboardPipeline {
         view_layout,
@@ -404,11 +404,13 @@ impl SpecializedMeshPipeline for BillboardPipeline {
                 entry_point: None,
                 buffers: vec![vertex_buffer_layout],
                 shader_defs: shader_defs.clone(),
+                constants: vec![],
             },
             fragment: Some(FragmentState {
                 shader: self.shader.clone(),
                 entry_point: None,
                 shader_defs,
+                constants: vec![],
                 targets: vec![Some(ColorTargetState {
                     format: if key.contains(BillboardPipelineKey::HDR) {
                         TextureFormat::Rgba16Float

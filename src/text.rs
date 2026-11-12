@@ -10,8 +10,8 @@ use bevy::render::sync_world::RenderEntity;
 use bevy::render::Extract;
 use bevy::sprite::Anchor;
 use bevy::text::{
-    ComputedTextBlock, FontAtlasSet, FontCx, FontHinting, LayoutCx, PositionedGlyph, ScaleCx,
-    TextBounds, TextLayoutInfo, TextPipeline, TextReader,
+    ComputedTextBlock, FontAtlasSet, FontCx, FontHinting, LayoutCx, PositionedGlyph, RemSize,
+    ScaleCx, TextBounds, TextElement, TextLayoutInfo, TextPipeline, TextReader,
 };
 use smallvec::SmallVec;
 
@@ -148,7 +148,7 @@ pub(crate) fn update_billboard_text_layout(
                 &mut font_system,
                 &mut layout_cx,
                 Vec2::ZERO,
-                0.0,
+                RemSize::default(),
             ) {
                 Err(TextError::NoSuchFont) => {
                     error!("Missing font (could still be loading)");
@@ -213,7 +213,7 @@ pub(crate) fn update_billboard_text_layout(
                 let mut indices = Vec::with_capacity(info.glyphs.len() * 6);
 
                 let mut color = palettes::css::WHITE.to_f32_array();
-                let mut current_span = usize::MAX;
+                let mut current_span = u32::MAX;
 
                 for PositionedGlyph {
                     position,
@@ -248,11 +248,16 @@ pub(crate) fn update_billboard_text_layout(
                     ]);
 
                     if section_index != current_span {
-                        color = text_reader
-                            .get_color(entity, section_index)
-                            .unwrap()
-                            .to_linear()
-                            .to_f32_array();
+                        if let Some((
+                            _,
+                            _,
+                            TextElement::Text {
+                                color: span_color, ..
+                            },
+                        )) = text_reader.get(entity, section_index as usize)
+                        {
+                            color = span_color.to_linear().to_f32_array();
+                        }
                         current_span = section_index;
                     }
 

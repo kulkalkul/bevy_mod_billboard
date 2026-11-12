@@ -22,7 +22,7 @@ pub struct BillboardPlugin;
 
 impl Plugin for BillboardPlugin {
     fn build(&self, app: &mut App) {
-        load_shader_library!(app, "shader/billboard.wgsl");
+        load_shader_library!(app, "shader/billboard.wesl");
 
         app.add_plugins(UniformComponentPlugin::<BillboardUniform>::default())
             .add_plugins(ExtractComponentPlugin::<Billboard>::default())

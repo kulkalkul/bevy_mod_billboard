@@ -1,6 +1,6 @@
 [package]
 name = "bevy_mod_billboard"
-version = "0.7.0"
+version = "0.8.0"
 edition = "2021"
 description = "Billboard text and texture support for bevy"
 license = "MIT OR Apache-2.0"
@@ -20,7 +20,7 @@ smallvec = "1.11.0"
 bitflags = "2.3"
 
 [dependencies.bevy]
-version = "0.19"
+version = "0.20"
 default-features = false
 features = [
     "bevy_core_pipeline",
@@ -36,7 +36,7 @@ features = [
 ]
 
 [dev-dependencies]
-bevy = "0.19"
+bevy = "0.20"
 
 # Remove expensive debug assertions due to <https://github.com/bevyengine/bevy/issues/14291>
 [profile.dev.package.wgpu-types]
